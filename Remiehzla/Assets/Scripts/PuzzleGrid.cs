@@ -46,6 +46,10 @@ namespace Remiehzla.Puzzle
         [Tooltip("选中时放大到多少倍。")]
         public float selectedScale = 1.06f;
 
+        [Header("移动动画")]
+        [Tooltip("一次交换滑动的时长（秒）。设为 0 就退回瞬间平移。")]
+        public float moveDuration = 0.14f;
+
         [Header("提示")]
         [Tooltip("在屏幕下方显示一行操作提示。")]
         public bool showHint = true;
@@ -81,6 +85,15 @@ namespace Remiehzla.Puzzle
         }
 
         void Update()
+        {
+            // 动画先推进，避免输入一多就积压着不动
+            float dt = Time.deltaTime;
+            for (int i = 0; i < tiles.Count; i++) tiles[i].TickSlide(dt);
+
+            HandleInput();
+        }
+
+        void HandleInput()
         {
             if (Input.GetKeyDown(KeyCode.R))
             {
@@ -137,7 +150,7 @@ namespace Remiehzla.Puzzle
                 PuzzleTile tile = tiles[i];
                 tile.CellIndex = i;                 // 格子位置不变，只换里面装哪块图
                 DisplayPiece(tile, pieces[i]);
-                LayoutTile(tile);
+                PlaceTile(tile, false);             // 打乱是瞬间铺开，不做位移动画
             }
 
             MoveCount = 0;
@@ -185,8 +198,8 @@ namespace Remiehzla.Puzzle
             other.CellIndex = fromCell;
             selected.CellIndex = targetCell;
 
-            LayoutTile(other);
-            LayoutTile(selected);
+            PlaceTile(other, true);
+            PlaceTile(selected, true);
 
             MoveCount++;
             CheckSolved();
@@ -218,14 +231,18 @@ namespace Remiehzla.Puzzle
             return new Rect(u + insetU, v + insetV, 1f / g - insetU * 2f, 1f / g - insetV * 2f);
         }
 
-        void LayoutTile(PuzzleTile tile)
+        /// <summary>把格子摆到它当前 CellIndex 对应的位置。animate = 滑动过去，否则直接落位。</summary>
+        void PlaceTile(PuzzleTile tile, bool animate)
         {
             float half = (gridSize - 1) * 0.5f;
             int col = tile.CellIndex % gridSize;
             int row = tile.CellIndex / gridSize;
 
             // 第 0 行在最上面
-            tile.TileRect.anchoredPosition = new Vector2((col - half) * step, (half - row) * step);
+            var position = new Vector2((col - half) * step, (half - row) * step);
+
+            if (animate) tile.SlideTo(position, moveDuration);
+            else tile.SnapTo(position);
         }
 
         void CheckSolved()

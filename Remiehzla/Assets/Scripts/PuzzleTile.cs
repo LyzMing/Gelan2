@@ -64,6 +64,68 @@ namespace Remiehzla.Puzzle
             if (isSelected) transform.SetAsLastSibling();
         }
 
+        // ------------------------------------------------------------------ 位移动画
+
+        /// <summary>当前是否正在滑动。</summary>
+        public bool IsAnimating { get; private set; }
+
+        Vector2 slideFrom;
+        Vector2 slideTo;
+        float slideTime;
+        float slideDuration;
+
+        /// <summary>直接落到目标位置，不做动画（打乱时用）。</summary>
+        public void SnapTo(Vector2 position)
+        {
+            if (TileRect == null) return;
+
+            TileRect.anchoredPosition = position;
+            slideFrom = position;
+            slideTo = position;
+            IsAnimating = false;
+        }
+
+        /// <summary>
+        /// 从"现在的位置"滑到目标位置。
+        /// 上一段滑动没播完时再调一次，会从当前位置重新起步，
+        /// 所以连按方向键不会卡住或跳一下。
+        /// </summary>
+        public void SlideTo(Vector2 position, float duration)
+        {
+            if (TileRect == null) return;
+
+            if (duration <= 0f)
+            {
+                SnapTo(position);
+                return;
+            }
+
+            slideFrom = TileRect.anchoredPosition;
+            slideTo = position;
+            slideTime = 0f;
+            slideDuration = duration;
+            IsAnimating = true;
+        }
+
+        /// <summary>每帧推进一步滑动。</summary>
+        public void TickSlide(float deltaTime)
+        {
+            if (!IsAnimating || TileRect == null) return;
+
+            slideTime += deltaTime;
+
+            float t = Mathf.Clamp01(slideTime / slideDuration);
+            float eased = 1f - (1f - t) * (1f - t);        // ease-out：起步快、落位稳
+
+            TileRect.anchoredPosition = Vector2.LerpUnclamped(slideFrom, slideTo, eased);
+
+            if (t >= 1f)
+            {
+                TileRect.anchoredPosition = slideTo;
+                IsAnimating = false;
+            }
+        }
+
         public void OnPointerClick(PointerEventData eventData)
         {
             if (owner == null) return;
