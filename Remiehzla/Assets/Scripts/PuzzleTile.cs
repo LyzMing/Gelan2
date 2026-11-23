@@ -84,6 +84,11 @@ namespace Remiehzla.Puzzle
 
         bool draggedSincePress;
 
+        /// <summary>这一格是不是错乱块（不显示图块）。</summary>
+        bool corrupted;
+
+        static readonly Color ClearPieceColor = new Color(1f, 1f, 1f, 0f);
+
         // ------------------------------------------------------------------ 初始化
 
         public void Init(PuzzleGrid grid, RawImage pieceImage, Image borderImage, RectTransform tileRect,
@@ -106,15 +111,19 @@ namespace Remiehzla.Puzzle
             dragScale = Mathf.Max(0.1f, scaleWhenDragged);
         }
 
-        /// <summary>把这一格显示成原图的第 pieceIndex 块。</summary>
+        /// <summary>把这一格显示成原图的第 pieceIndex 块。pieceIndex &lt; 0 表示错乱块。</summary>
         public void Display(int pieceIndex, Texture texture, Rect uvRect)
         {
             PieceIndex = pieceIndex;
+            corrupted = pieceIndex < 0;
 
             if (piece == null) return;
 
             piece.texture = texture;
             piece.uvRect = uvRect;
+
+            // 错乱块：图块透明（仍然能被点中，只是看不见），只留一圈描边
+            piece.color = corrupted ? ClearPieceColor : Color.white;
         }
 
         // ------------------------------------------------------------------ 选中 / 拖拽外观
@@ -147,7 +156,8 @@ namespace Remiehzla.Puzzle
         {
             if (piece == null) return;
 
-            piece.color = dimmed ? dimColor : Color.white;
+            // 恢复时要回到"原本"的颜色：错乱块本来就是透明的
+            piece.color = dimmed ? dimColor : (corrupted ? ClearPieceColor : Color.white);
         }
 
         // ------------------------------------------------------------------ 位置动画
