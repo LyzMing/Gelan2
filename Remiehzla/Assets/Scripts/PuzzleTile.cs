@@ -41,6 +41,9 @@ namespace Remiehzla.Puzzle
         /// <summary>旋转动画是否还在播（播完之前不接受新的旋转输入）。</summary>
         public bool IsRotating => rotating;
 
+        /// <summary>当前旋转角的动画目标（撤销记录用）。</summary>
+        public float AngleTarget => angleTarget;
+
         /// <summary>本格自己的 RectTransform，用来摆位置。</summary>
         public RectTransform TileRect { get; private set; }
 
@@ -247,6 +250,43 @@ namespace Remiehzla.Puzzle
             ApplyOrientation();
         }
 
+        /// <summary>
+        /// 直接把朝向恢复成指定状态（撤销、复制时用）。
+        /// 和 Rotate / ToggleFlip 那套"相对"操作不同，这里是绝对赋值，
+        /// 所以哪怕动画正在播、或者中间漏按了几次，也能精确回到记录时的样子。
+        /// duration <= 0 立即生效，否则滑过去。
+        /// </summary>
+        public void RestoreOrientation(int turnSteps, bool flippedX, float angleTargetValue, float duration)
+        {
+            TurnSteps = ((turnSteps % 4) + 4) % 4;
+            FlippedX = flippedX;
+            angleTarget = angleTargetValue;
+
+            if (duration <= 0f)
+            {
+                angle = angleTarget;
+                rotating = false;
+
+                flip = FlippedX ? -1f : 1f;
+                flipping = false;
+
+                ApplyOrientation();
+                return;
+            }
+
+            angleFrom = angle;
+            angleTo = angleTarget;
+            angleTime = 0f;
+            angleDuration = duration;
+            rotating = Mathf.Abs(angleTo - angleFrom) > 0.01f;      // 已经正了就别空转
+
+            flipFrom = flip;
+            flipTo = FlippedX ? -1f : 1f;
+            flipTime = 0f;
+            flipDuration = duration;
+            flipping = Mathf.Abs(flipTo - flipFrom) > 0.001f;
+        }
+
         void ApplyOrientation()
         {
             // 旋转作用在 SpinRoot 上：图块和描边是同一条链上的兄弟，
@@ -335,8 +375,9 @@ namespace Remiehzla.Puzzle
             if (owner == null) return;
             if (eventData != null && eventData.button != PointerEventData.InputButton.Left) return;
 
-            // 刚拖过就不算点击，否则拖完会被当成一次"切换选中"
-            if (draggedSincePress) return;
+            // 刚拖过就不算点击，否则拖完会被当成一次"切换选中"。
+            // 但复制模式例外：那时左键的语义是"放下"，松手就得放下。
+            if (draggedSincePress && !owner.IsCopyMode) return;
 
             owner.OnTileClicked(this);
         }

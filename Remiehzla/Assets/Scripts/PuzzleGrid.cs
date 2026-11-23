@@ -92,6 +92,9 @@ namespace Remiehzla.Puzzle
         /// <summary>当前选中的格子，没有选中时为 null。</summary>
         public PuzzleTile Selected => selected;
 
+        /// <summary>是否正处于"复制中，等左键放下"的状态。</summary>
+        public bool IsCopyMode => copyMode;
+
         readonly List<PuzzleTile> tiles = new List<PuzzleTile>();
 
         PuzzleTile selected;
@@ -105,6 +108,33 @@ namespace Remiehzla.Puzzle
 
         Vector2 dragGrabOffset;
         Vector3 lastPanMousePosition;
+
+        // ---- 复制 / 粘贴 ----
+        bool copyMode;              // true = 手上拿着一块"复制体"，等左键放下
+        PuzzleTile copySource;      // 复制源
+        PuzzleTile ghost;           // 跟着光标的复制体（不在 tiles 里，不参与格子逻辑）
+        int copyPiece;
+        int copyTurns;
+        bool copyFlipped;
+        float copyAngle;
+
+        // ---- 撤销 ----
+        enum ActionKind { Swap, Rotate, Flip, Overwrite }
+
+        struct PuzzleAction
+        {
+            public ActionKind Kind;
+            public PuzzleTile A;
+            public PuzzleTile B;
+            public int PrevPiece;
+            public int PrevTurns;
+            public bool PrevFlipped;
+            public float PrevAngle;
+        }
+
+        const int MaxHistory = 64;
+
+        readonly List<PuzzleAction> history = new List<PuzzleAction>();
 
         // ------------------------------------------------------------------ 生命周期
 
@@ -128,12 +158,21 @@ namespace Remiehzla.Puzzle
 
             HandleCameraInput();
             HandleInput();
+            UpdateGhost(dt);
         }
 
         void HandleInput()
         {
             // 拖拽过程中不接受键盘操作，避免一边拖一边转
             if (dragging != null) return;
+
+            // 复制模式：只响应 Esc 取消，左键由点击事件负责放下
+            if (copyMode)
+            {
+                if (Input.GetKeyDown(KeyCode.Escape)) CancelCopy();
+
+                return;
+            }
 
             if (Input.GetKeyDown(KeyCode.R))
             {
@@ -147,6 +186,8 @@ namespace Remiehzla.Puzzle
                 return;
             }
 
+            if (Input.GetKeyDown(KeyCode.Z)) { Undo(); return; }                     // 撤销
+            if (Input.GetKeyDown(KeyCode.C)) { BeginCopy(); return; }                // 复制
             if (Input.GetKeyDown(KeyCode.K)) { RotateSelected(true); return; }      // 顺时针
             if (Input.GetKeyDown(KeyCode.H)) { RotateSelected(false); return; }     // 逆时针
             if (Input.GetKeyDown(KeyCode.J)) { FlipSelected(); return; }            // 水平翻转
@@ -198,6 +239,9 @@ namespace Remiehzla.Puzzle
                 PlaceTile(tile, false);             // 打乱是瞬间铺开，不做位移动画
             }
 
+            CancelCopy();
+            history.Clear();
+
             MoveCount = 0;
             IsSolved = false;
             Select(null);
@@ -236,8 +280,19 @@ namespace Remiehzla.Puzzle
             return true;
         }
 
-        /// <summary>两块互换所在格子，然后各自滑过去。</summary>
+        /// <summary>两块互换所在格子，然后各自滑过去（并记入撤销栈）。</summary>
         void SwapCells(PuzzleTile a, PuzzleTile b)
+        {
+            PushUndo(CaptureAction(ActionKind.Swap, a, b));
+
+            ApplySwap(a, b);
+
+            MoveCount++;
+            CheckSolved();
+        }
+
+        /// <summary>只做交换本身，不记撤销、不算步数（撤销时复用）。</summary>
+        void ApplySwap(PuzzleTile a, PuzzleTile b)
         {
             // 只交换"占位"，图（和朝向）跟着块走：视觉上就是两块互换了位置
             int aCell = a.CellIndex;
@@ -248,9 +303,6 @@ namespace Remiehzla.Puzzle
 
             PlaceTile(a, true);
             PlaceTile(b, true);
-
-            MoveCount++;
-            CheckSolved();
         }
 
         // ------------------------------------------------------------------ 旋转 / 翻转
@@ -263,8 +315,13 @@ namespace Remiehzla.Puzzle
         {
             if (selected == null) return false;
 
+            // 先记下"转之前"的样子，只有真正转成功了才进撤销栈
+            PuzzleAction snapshot = CaptureAction(ActionKind.Rotate, selected);
+
             // 由 PuzzleTile 把关：动画没播完就拒绝，保证每次成功都是整 90°
             if (!selected.Rotate(clockwise, rotateDuration)) return false;
+
+            PushUndo(snapshot);
 
             // 旋转时四个角会转出格子，得压在别的拼图上面
             selected.BringToFront();
@@ -278,8 +335,12 @@ namespace Remiehzla.Puzzle
         {
             if (selected == null) return;
 
+            PuzzleAction snapshot = CaptureAction(ActionKind.Flip, selected);
+
             selected.BringToFront();
             selected.ToggleFlip(flipDuration);
+            PushUndo(snapshot);
+
             CheckSolved();
         }
 
@@ -289,12 +350,15 @@ namespace Remiehzla.Puzzle
         {
             if (tile == null) return;
 
+            // 复制模式 / 复制体还在飞的时候，左键是用来放下的，不响应拖拽
+            if (copyMode || ghost != null) return;
+
             Select(tile);
             dragging = tile;
 
             tile.StopSlide();           // 打断没播完的滑动，免得和拖拽抢位置
             tile.SetDragVisual(true);   // 内部会把这档提到最上层
-            ClearDragHover();
+            ClearHover();
 
             Vector2 local;
             if (TryScreenToBoardLocal(eventData != null ? eventData.position : (Vector2)Input.mousePosition, out local))
@@ -318,10 +382,17 @@ namespace Remiehzla.Puzzle
 
         internal void OnTileEndDrag(PuzzleTile tile, PointerEventData eventData)
         {
+            // 复制模式下"拖了一下再松手"也算放下（此时 uGUI 不会派发 click）
+            if (copyMode)
+            {
+                PlaceCopyAtCursor();
+                return;
+            }
+
             if (dragging != tile || tile == null) return;
 
             dragging = null;
-            ClearDragHover();           // 松手立刻把压暗恢复
+            ClearHover();               // 松手立刻把压暗恢复
             tile.SetDragVisual(false);
 
             Vector2 local;
@@ -346,6 +417,14 @@ namespace Remiehzla.Puzzle
             }
 
             SwapCells(tile, other);
+        }
+
+        /// <summary>点在背景上（棋盘外或格缝里）。复制模式下按"就近放下 / 放弃"处理。</summary>
+        void OnBackgroundClicked()
+        {
+            if (!copyMode) return;
+
+            PlaceCopyAtCursor();
         }
 
         /// <summary>更新"光标下面那块"的压暗提示，以及拖拽期间的层级顺序。</summary>
@@ -388,11 +467,210 @@ namespace Remiehzla.Puzzle
                 partner.transform.SetSiblingIndex(partnerIndex);
         }
 
-        void ClearDragHover()
+        void ClearHover()
         {
             if (hoverTile != null) hoverTile.SetDimmed(false, hoverDimColor);
 
             hoverTile = null;
+        }
+
+        // ------------------------------------------------------------------ 复制 / 粘贴
+
+        /// <summary>
+        /// 复制选中的块：生成一个跟着光标的"复制体"，
+        /// 之后左键放在哪个格子，就把那块覆盖成复制体的样子；Esc 取消。
+        /// </summary>
+        public bool BeginCopy()
+        {
+            if (selected == null || copyMode || dragging != null) return false;
+
+            CancelCopy();       // 清掉可能还在飞的上一块
+
+            copySource = selected;
+            copyPiece = selected.PieceIndex;
+            copyTurns = selected.TurnSteps;
+            copyFlipped = selected.FlippedX;
+            copyAngle = selected.AngleTarget;
+
+            // 复用 CreateTile 造一块"幽灵"，它不在 tiles 里，不参与格子逻辑
+            ghost = CreateTile(selected.CellIndex);
+            ghost.Display(copyPiece, texture, UvRect(copyPiece));
+            ghost.RestoreOrientation(copyTurns, copyFlipped, copyAngle, 0f);
+            ghost.SetSelected(true);
+            ghost.SetDragVisual(true);          // 放大 + 提到最上层
+            ghost.TileRect.anchoredPosition = selected.TileRect.anchoredPosition;
+
+            copyMode = true;
+            ClearHover();
+
+            Debug.Log("[PuzzleGrid] 复制中：左键放下覆盖，Esc 取消");
+
+            return true;
+        }
+
+        /// <summary>取消复制（Esc、点到棋盘外、或重新开始复制）。</summary>
+        public void CancelCopy()
+        {
+            copyMode = false;
+            ClearHover();
+            DestroyGhost();
+        }
+
+        void DestroyGhost()
+        {
+            if (ghost == null) return;
+
+            Destroy(ghost.gameObject);
+            ghost = null;
+        }
+
+        /// <summary>把复制体放到光标所在的格子，覆盖那一格的拼图。</summary>
+        void PlaceCopyAtCursor()
+        {
+            if (!copyMode) return;
+
+            Vector2 local;
+            int cell;
+
+            // 棋盘外 / 取不到坐标：当作放弃
+            if (!TryScreenToBoardLocal(Input.mousePosition, out local) || !TryGetCellAtLocal(local, out cell))
+            {
+                CancelCopy();
+                return;
+            }
+
+            PuzzleTile target = FindTileByCell(cell);
+
+            // 放到自己身上没有意义，直接取消
+            if (target == null || target == copySource)
+            {
+                CancelCopy();
+                return;
+            }
+
+            // 记下被覆盖前的样子，F/Z 能撤回
+            PushUndo(CaptureAction(ActionKind.Overwrite, target));
+
+            // 覆盖：目标格变成复制体的图 + 朝向
+            DisplayPiece(target, copyPiece);
+            target.RestoreOrientation(copyTurns, copyFlipped, copyAngle, rotateDuration);
+
+            copyMode = false;
+            ClearHover();
+            CheckSolved();
+
+            // 复制体滑到目标格再消失，视觉上就是"放下去了"
+            if (ghost != null) ghost.SlideTo(CellPosition(cell), moveDuration);
+        }
+
+        void UpdateGhost(float deltaTime)
+        {
+            if (ghost == null) return;
+
+            if (copyMode)
+            {
+                // 跟手：复制体中心贴着光标
+                Vector2 local;
+                if (TryScreenToBoardLocal(Input.mousePosition, out local))
+                {
+                    ghost.TileRect.anchoredPosition = local;
+                    UpdateCopyHover(local);
+                }
+
+                return;
+            }
+
+            // 放下之后：让复制体滑进格子，落位就销毁
+            ghost.TickAnimation(deltaTime);
+
+            if (!ghost.IsAnimating) DestroyGhost();
+        }
+
+        /// <summary>复制模式下压暗光标下面那一格（源块自身不算目标）。</summary>
+        void UpdateCopyHover(Vector2 local)
+        {
+            PuzzleTile target = null;
+
+            int cell;
+            if (TryGetCellAtLocal(local, out cell))
+            {
+                PuzzleTile candidate = FindTileByCell(cell);
+                if (candidate != null && candidate != copySource) target = candidate;
+            }
+
+            if (target == hoverTile) return;
+
+            if (hoverTile != null) hoverTile.SetDimmed(false, hoverDimColor);
+
+            hoverTile = target;
+
+            if (hoverTile != null) hoverTile.SetDimmed(true, hoverDimColor);
+        }
+
+        // ------------------------------------------------------------------ 撤销
+
+        PuzzleAction CaptureAction(ActionKind kind, PuzzleTile tile, PuzzleTile other = null)
+        {
+            return new PuzzleAction
+            {
+                Kind = kind,
+                A = tile,
+                B = other,
+                PrevPiece = tile != null ? tile.PieceIndex : 0,
+                PrevTurns = tile != null ? tile.TurnSteps : 0,
+                PrevFlipped = tile != null && tile.FlippedX,
+                PrevAngle = tile != null ? tile.AngleTarget : 0f
+            };
+        }
+
+        void PushUndo(PuzzleAction action)
+        {
+            history.Add(action);
+
+            // 只保留最近若干步，避免长时间游玩一直攒
+            if (history.Count > MaxHistory) history.RemoveAt(0);
+        }
+
+        /// <summary>撤销上一步操作，返回是否真的撤了。</summary>
+        public bool Undo()
+        {
+            if (history.Count == 0) return false;
+            if (dragging != null || copyMode) return false;
+
+            int last = history.Count - 1;
+            PuzzleAction action = history[last];
+            history.RemoveAt(last);
+
+            switch (action.Kind)
+            {
+                case ActionKind.Swap:
+                    if (action.A != null && action.B != null)
+                    {
+                        ApplySwap(action.A, action.B);      // 再换回来
+                        MoveCount = Mathf.Max(0, MoveCount - 1);
+                    }
+                    break;
+
+                case ActionKind.Overwrite:
+                    if (action.A != null)
+                    {
+                        DisplayPiece(action.A, action.PrevPiece);
+                        action.A.RestoreOrientation(action.PrevTurns, action.PrevFlipped, action.PrevAngle, rotateDuration);
+                    }
+                    break;
+
+                case ActionKind.Rotate:
+                case ActionKind.Flip:
+                    if (action.A != null)
+                    {
+                        // 绝对恢复，所以哪怕动画还在播也能准确回到记录时的角度
+                        action.A.RestoreOrientation(action.PrevTurns, action.PrevFlipped, action.PrevAngle, rotateDuration);
+                    }
+                    break;
+            }
+
+            CheckSolved();
+            return true;
         }
 
         // ------------------------------------------------------------------ 缩放 / 平移
@@ -470,15 +748,20 @@ namespace Remiehzla.Puzzle
             return new Rect(u + insetU, v + insetV, 1f / g - insetU * 2f, 1f / g - insetV * 2f);
         }
 
+        /// <summary>格子下标对应的棋盘本地坐标（第 0 行在最上面）。</summary>
+        Vector2 CellPosition(int cell)
+        {
+            float half = (gridSize - 1) * 0.5f;
+            int col = cell % gridSize;
+            int row = cell / gridSize;
+
+            return new Vector2((col - half) * step, (half - row) * step);
+        }
+
         /// <summary>把格子摆到它当前 CellIndex 对应的位置。animate = 滑动过去，否则直接落位。</summary>
         void PlaceTile(PuzzleTile tile, bool animate)
         {
-            float half = (gridSize - 1) * 0.5f;
-            int col = tile.CellIndex % gridSize;
-            int row = tile.CellIndex / gridSize;
-
-            // 第 0 行在最上面
-            var position = new Vector2((col - half) * step, (half - row) * step);
+            Vector2 position = CellPosition(tile.CellIndex);
 
             if (animate) tile.SlideTo(position, moveDuration);
             else tile.SnapTo(position);
@@ -556,6 +839,16 @@ namespace Remiehzla.Puzzle
 
         internal void OnTileClicked(PuzzleTile tile)
         {
+            // 复制模式下左键 = 把这个复制体放下去（点哪一格由光标位置决定）
+            if (copyMode)
+            {
+                PlaceCopyAtCursor();
+                return;
+            }
+
+            // 复制体是临时物体，不算可选的格子
+            if (tile == null || tile == ghost) return;
+
             Select(selected == tile ? null : tile);
         }
 
@@ -658,7 +951,14 @@ namespace Remiehzla.Puzzle
 
             var bg = bgGo.GetComponent<Image>();
             bg.color = backgroundColor;
-            bg.raycastTarget = false;
+
+            // 背景要能被点到：复制模式下点棋盘外/格缝 = 放弃或就近放下
+            bg.raycastTarget = true;
+
+            var bgTrigger = bgGo.AddComponent<EventTrigger>();
+            var clickEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+            clickEntry.callback.AddListener(_ => OnBackgroundClicked());
+            bgTrigger.triggers.Add(clickEntry);
 
             // 棋盘容器（缩放和平移都作用在它身上）
             var boardGo = new GameObject("Board", typeof(RectTransform));
@@ -806,7 +1106,7 @@ namespace Remiehzla.Puzzle
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;
             text.raycastTarget = false;
-            text.text = "左键点选 / 拖动交换　↑↓←→ 移动　H K 旋转　J 翻转　滚轮缩放　中键平移　R 重打乱";
+            text.text = "左键点选/拖动交换　↑↓←→ 移动　H K 旋转　J 翻转　C 复制　Z 撤销　R 重打乱　滚轮缩放　中键平移";
         }
 
         static void StretchFull(RectTransform rect)
