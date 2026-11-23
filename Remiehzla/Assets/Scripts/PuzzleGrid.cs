@@ -6,16 +6,19 @@ using UnityEngine.UI;
 namespace Remiehzla.Puzzle
 {
     /// <summary>
-    /// 4x4 拼图原型（策划案第一关"家"的解谜机制）。
+    /// 拼图原型：切图 → 打乱 → 交换 / 旋转 / 翻转 / 拖拽 → 复原。
     ///
-    /// 玩法：
-    ///   1. 开局把整图切成 gridSize × gridSize 块，随机打乱。
-    ///   2. 鼠标左键点选一块，选中块会亮边框。
-    ///   3. 按 ↑ ↓ ← → 让选中块和相邻格互换位置（撞边界则不动）。
-    ///   4. 再点一次取消选择；R 重新打乱；Esc 取消选择。
+    /// 操作：
+    ///   左键点选一块                     选中
+    ///   ↑ ↓ ← →                          选中块与相邻格互换
+    ///   K / H                            选中块顺时针 / 逆时针转 90°
+    ///   J                                选中块水平镜像翻转
+    ///   左键按住拖动                      直接拖起来，松手与光标所在格互换；拖到外面则滑回原位
+    ///   滚轮                              以光标为中心缩放画面
+    ///   按住中键拖动                       平移整个画面
+    ///   R / Esc                          重新打乱 / 取消选中
     ///
-    /// 所有 UI（Canvas / 背景 / 格子 / 提示）都在运行时生成，
-    /// 场景里只需要一个挂着本脚本的空物体。
+    /// 所有 UI 都在运行时生成，场景里只需要一个挂着本脚本的空物体。
     /// </summary>
     [DisallowMultipleComponent]
     public class PuzzleGrid : MonoBehaviour
@@ -46,18 +49,44 @@ namespace Remiehzla.Puzzle
         [Tooltip("选中时放大到多少倍。")]
         public float selectedScale = 1.06f;
 
-        [Header("移动动画")]
-        [Tooltip("一次交换滑动的时长（秒）。设为 0 就退回瞬间平移。")]
+        [Tooltip("拖拽中放大到多少倍（建议比选中略大）。")]
+        public float dragScale = 1.12f;
+
+        [Header("拖拽提示")]
+        [Tooltip("拖拽时，光标下面那块即将被交换的拼图压暗成这个颜色。")]
+        public Color hoverDimColor = new Color(0.42f, 0.44f, 0.52f, 1f);
+
+        [Header("动画速度")]
+        [Tooltip("交换 / 拖拽落位 / 拖出界归位的滑动时长（秒）。0 = 瞬间平移。")]
         public float moveDuration = 0.14f;
+
+        [Tooltip("按 H / K 旋转 90° 的时长（秒）。0 = 瞬间旋转。")]
+        public float rotateDuration = 0.18f;
+
+        [Tooltip("按 J 水平翻转的时长（秒）。0 = 瞬间翻转。")]
+        public float flipDuration = 0.16f;
+
+        [Header("缩放 / 平移")]
+        [Tooltip("滚轮灵敏度：每滚一格画面缩放的增量，0.15 = 约 15%。")]
+        public float zoomSpeed = 0.15f;
+
+        [Tooltip("画面最小缩放倍数。")]
+        public float zoomMin = 0.5f;
+
+        [Tooltip("画面最大缩放倍数。")]
+        public float zoomMax = 3f;
+
+        [Tooltip("中键平移的跟随倍率，1 = 画面完全跟手。")]
+        public float panSpeed = 1f;
 
         [Header("提示")]
         [Tooltip("在屏幕下方显示一行操作提示。")]
         public bool showHint = true;
 
-        /// <summary>当前是否已经拼好。</summary>
+        /// <summary>当前是否已经拼好（位置对 + 方向都正立）。</summary>
         public bool IsSolved { get; private set; }
 
-        /// <summary>本次打乱以来移动了几步（第一关的步数限制以后可以接这里）。</summary>
+        /// <summary>本次打乱以来位置交换了几次（旋转/翻转不算步数）。</summary>
         public int MoveCount { get; private set; }
 
         /// <summary>当前选中的格子，没有选中时为 null。</summary>
@@ -66,9 +95,16 @@ namespace Remiehzla.Puzzle
         readonly List<PuzzleTile> tiles = new List<PuzzleTile>();
 
         PuzzleTile selected;
+        PuzzleTile dragging;
+        PuzzleTile hoverTile;
         RectTransform boardRect;
+        Canvas canvas;
         Texture2D texture;
+        Sprite ringSprite;
         float step;
+
+        Vector2 dragGrabOffset;
+        Vector3 lastPanMousePosition;
 
         // ------------------------------------------------------------------ 生命周期
 
@@ -88,13 +124,17 @@ namespace Remiehzla.Puzzle
         {
             // 动画先推进，避免输入一多就积压着不动
             float dt = Time.deltaTime;
-            for (int i = 0; i < tiles.Count; i++) tiles[i].TickSlide(dt);
+            for (int i = 0; i < tiles.Count; i++) tiles[i].TickAnimation(dt);
 
+            HandleCameraInput();
             HandleInput();
         }
 
         void HandleInput()
         {
+            // 拖拽过程中不接受键盘操作，避免一边拖一边转
+            if (dragging != null) return;
+
             if (Input.GetKeyDown(KeyCode.R))
             {
                 Shuffle();
@@ -107,6 +147,10 @@ namespace Remiehzla.Puzzle
                 return;
             }
 
+            if (Input.GetKeyDown(KeyCode.K)) { RotateSelected(true); return; }      // 顺时针
+            if (Input.GetKeyDown(KeyCode.H)) { RotateSelected(false); return; }     // 逆时针
+            if (Input.GetKeyDown(KeyCode.J)) { FlipSelected(); return; }            // 水平翻转
+
             int dx = 0, dy = 0;
             if (Input.GetKeyDown(KeyCode.UpArrow)) dy = -1;         // 行号向上减小
             else if (Input.GetKeyDown(KeyCode.DownArrow)) dy = 1;
@@ -117,9 +161,9 @@ namespace Remiehzla.Puzzle
             TrySwapWithNeighbor(dx, dy);
         }
 
-        // ------------------------------------------------------------------ 对外接口
+        // ------------------------------------------------------------------ 打乱
 
-        /// <summary>重新随机打乱（不会打乱成已复原的样子）。</summary>
+        /// <summary>重新随机打乱（不会打乱成已复原的样子），同时把所有块摆正。</summary>
         public void Shuffle()
         {
             int n = tiles.Count;
@@ -149,6 +193,7 @@ namespace Remiehzla.Puzzle
             {
                 PuzzleTile tile = tiles[i];
                 tile.CellIndex = i;                 // 格子位置不变，只换里面装哪块图
+                tile.ResetOrientation();            // 旋转/翻转状态一起清掉
                 DisplayPiece(tile, pieces[i]);
                 PlaceTile(tile, false);             // 打乱是瞬间铺开，不做位移动画
             }
@@ -159,6 +204,8 @@ namespace Remiehzla.Puzzle
 
             Debug.Log($"[PuzzleGrid] 已打乱（{gridSize}×{gridSize}）");
         }
+
+        // ------------------------------------------------------------------ 交换
 
         /// <summary>
         /// 把选中的块往 (dx, dy) 方向推一格，和目标格互换。
@@ -182,31 +229,223 @@ namespace Remiehzla.Puzzle
 
             int targetCell = targetRow * gridSize + targetCol;
 
-            PuzzleTile other = null;
-            for (int i = 0; i < tiles.Count; i++)
-            {
-                if (tiles[i].CellIndex != targetCell) continue;
-                other = tiles[i];
-                break;
-            }
-
+            PuzzleTile other = FindTileByCell(targetCell);
             if (other == null || other == selected) return false;
 
-            // 只交换"占位"，图跟着块走：
-            // 选中的这块带着自己的图挪到目标格，目标格那块被挤回原来的格，
-            // 两块在视觉上就是互换位置了。
-            other.CellIndex = fromCell;
-            selected.CellIndex = targetCell;
+            SwapCells(selected, other);
+            return true;
+        }
 
-            PlaceTile(other, true);
-            PlaceTile(selected, true);
+        /// <summary>两块互换所在格子，然后各自滑过去。</summary>
+        void SwapCells(PuzzleTile a, PuzzleTile b)
+        {
+            // 只交换"占位"，图（和朝向）跟着块走：视觉上就是两块互换了位置
+            int aCell = a.CellIndex;
+            int bCell = b.CellIndex;
+
+            a.CellIndex = bCell;
+            b.CellIndex = aCell;
+
+            PlaceTile(a, true);
+            PlaceTile(b, true);
 
             MoveCount++;
+            CheckSolved();
+        }
+
+        // ------------------------------------------------------------------ 旋转 / 翻转
+
+        /// <summary>
+        /// 旋转选中的块（clockwise = true 为顺时针 90°）。
+        /// 上一段旋转动画没播完时本次输入无效，返回 false。
+        /// </summary>
+        public bool RotateSelected(bool clockwise)
+        {
+            if (selected == null) return false;
+
+            // 由 PuzzleTile 把关：动画没播完就拒绝，保证每次成功都是整 90°
+            if (!selected.Rotate(clockwise, rotateDuration)) return false;
+
+            // 旋转时四个角会转出格子，得压在别的拼图上面
+            selected.BringToFront();
+
             CheckSolved();
             return true;
         }
 
-        // ------------------------------------------------------------------ 内部：切图与布局
+        /// <summary>水平镜像翻转选中的块。</summary>
+        public void FlipSelected()
+        {
+            if (selected == null) return;
+
+            selected.BringToFront();
+            selected.ToggleFlip(flipDuration);
+            CheckSolved();
+        }
+
+        // ------------------------------------------------------------------ 拖拽
+
+        internal void OnTileBeginDrag(PuzzleTile tile, PointerEventData eventData)
+        {
+            if (tile == null) return;
+
+            Select(tile);
+            dragging = tile;
+
+            tile.StopSlide();           // 打断没播完的滑动，免得和拖拽抢位置
+            tile.SetDragVisual(true);   // 内部会把这档提到最上层
+            ClearDragHover();
+
+            Vector2 local;
+            if (TryScreenToBoardLocal(eventData != null ? eventData.position : (Vector2)Input.mousePosition, out local))
+                dragGrabOffset = tile.TileRect.anchoredPosition - local;
+            else
+                dragGrabOffset = Vector2.zero;
+        }
+
+        internal void OnTileDrag(PuzzleTile tile, PointerEventData eventData)
+        {
+            if (dragging != tile || tile == null) return;
+
+            Vector2 local;
+            if (!TryScreenToBoardLocal(eventData.position, out local)) return;
+
+            // 保持"抓取时手指在图块上的相对位置"，拖起来才不会跳
+            tile.TileRect.anchoredPosition = local + dragGrabOffset;
+
+            UpdateDragHover(tile, local);
+        }
+
+        internal void OnTileEndDrag(PuzzleTile tile, PointerEventData eventData)
+        {
+            if (dragging != tile || tile == null) return;
+
+            dragging = null;
+            ClearDragHover();           // 松手立刻把压暗恢复
+            tile.SetDragVisual(false);
+
+            Vector2 local;
+            if (!TryScreenToBoardLocal(eventData.position, out local))
+            {
+                PlaceTile(tile, true);      // 松手时连坐标都拿不到，直接回原位
+                return;
+            }
+
+            int targetCell;
+            if (!TryGetCellAtLocal(local, out targetCell) || targetCell == tile.CellIndex)
+            {
+                PlaceTile(tile, true);      // 拖到棋盘外，或拖回自己身上
+                return;
+            }
+
+            PuzzleTile other = FindTileByCell(targetCell);
+            if (other == null || other == tile)
+            {
+                PlaceTile(tile, true);
+                return;
+            }
+
+            SwapCells(tile, other);
+        }
+
+        /// <summary>更新"光标下面那块"的压暗提示，以及拖拽期间的层级顺序。</summary>
+        void UpdateDragHover(PuzzleTile dragged, Vector2 local)
+        {
+            PuzzleTile target = null;
+
+            int cell;
+            if (TryGetCellAtLocal(local, out cell))
+            {
+                PuzzleTile candidate = FindTileByCell(cell);
+                if (candidate != null && candidate != dragged) target = candidate;
+            }
+
+            if (target == hoverTile) return;
+
+            if (hoverTile != null) hoverTile.SetDimmed(false, hoverDimColor);
+
+            hoverTile = target;
+
+            if (hoverTile != null) hoverTile.SetDimmed(true, hoverDimColor);
+
+            ApplyDragOrder(dragged, hoverTile);
+        }
+
+        /// <summary>
+        /// 拖拽期间的层级：拖动的块在最上 → 被换位置的块在它下面 → 其他拼图在最下层。
+        /// </summary>
+        void ApplyDragOrder(PuzzleTile dragged, PuzzleTile partner)
+        {
+            if (dragged == null) return;
+
+            dragged.BringToFront();
+
+            if (partner == null || partner == dragged) return;
+
+            // 父物体里最后一个是 dragged，把它排在倒数第二——正好压在其余拼图上面
+            int partnerIndex = dragged.transform.parent.childCount - 2;
+            if (partnerIndex >= 0 && partner.transform.GetSiblingIndex() != partnerIndex)
+                partner.transform.SetSiblingIndex(partnerIndex);
+        }
+
+        void ClearDragHover()
+        {
+            if (hoverTile != null) hoverTile.SetDimmed(false, hoverDimColor);
+
+            hoverTile = null;
+        }
+
+        // ------------------------------------------------------------------ 缩放 / 平移
+
+        void HandleCameraInput()
+        {
+            // 滚轮：以光标为中心缩放
+            float scroll = Input.mouseScrollDelta.y;
+            if (Mathf.Abs(scroll) > 0.001f) ZoomAtCursor(scroll);
+
+            // 中键：平移整个画面
+            if (Input.GetMouseButtonDown(2))
+            {
+                lastPanMousePosition = Input.mousePosition;
+            }
+            else if (Input.GetMouseButton(2))
+            {
+                Vector3 current = Input.mousePosition;
+                Vector3 delta = current - lastPanMousePosition;
+                lastPanMousePosition = current;
+
+                if (boardRect != null)
+                {
+                    float scaleFactor = canvas != null && canvas.scaleFactor > 0f ? canvas.scaleFactor : 1f;
+                    boardRect.anchoredPosition += new Vector2(delta.x, delta.y) / scaleFactor * panSpeed;
+                }
+            }
+        }
+
+        /// <summary>以鼠标位置为锚点缩放画面（光标下的那块拼图尽量不动）。</summary>
+        void ZoomAtCursor(float scroll)
+        {
+            if (boardRect == null || zoomSpeed <= 0f) return;
+
+            float oldScale = boardRect.localScale.x;
+
+            float lo = Mathf.Min(zoomMin, zoomMax);
+            float hi = Mathf.Max(zoomMin, zoomMax);
+            float factor = Mathf.Max(0.01f, 1f + scroll * zoomSpeed);
+            float newScale = Mathf.Clamp(oldScale * factor, lo, hi);
+
+            if (Mathf.Approximately(newScale, oldScale)) return;
+
+            // 先把光标换算成棋盘本地坐标（要用缩放前的比例），
+            // 再按"本地坐标 * 缩放"补回位置差，光标下的点就会停在原地。
+            Vector2 local;
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(boardRect, Input.mousePosition, null, out local))
+                boardRect.anchoredPosition += local * (oldScale - newScale);
+
+            boardRect.localScale = new Vector3(newScale, newScale, 1f);
+        }
+
+        // ------------------------------------------------------------------ 切图与布局
 
         void DisplayPiece(PuzzleTile tile, int pieceIndex)
         {
@@ -245,12 +484,54 @@ namespace Remiehzla.Puzzle
             else tile.SnapTo(position);
         }
 
+        /// <summary>把棋盘本地坐标换算成格子下标；落在棋盘外返回 false。</summary>
+        bool TryGetCellAtLocal(Vector2 local, out int cell)
+        {
+            float half = (gridSize - 1) * 0.5f;
+            float boardHalf = (gridSize * step - spacing) * 0.5f;
+
+            if (Mathf.Abs(local.x) > boardHalf || Mathf.Abs(local.y) > boardHalf)
+            {
+                cell = -1;
+                return false;
+            }
+
+            int col = Mathf.RoundToInt(local.x / step + half);
+            int row = Mathf.RoundToInt(half - local.y / step);
+
+            // 落在格缝里就吸到最近的格子
+            col = Mathf.Clamp(col, 0, gridSize - 1);
+            row = Mathf.Clamp(row, 0, gridSize - 1);
+
+            cell = row * gridSize + col;
+            return true;
+        }
+
+        bool TryScreenToBoardLocal(Vector2 screenPosition, out Vector2 local)
+        {
+            // ScreenSpaceOverlay 下相机传 null 即可
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle(boardRect, screenPosition, null, out local);
+        }
+
+        PuzzleTile FindTileByCell(int cell)
+        {
+            for (int i = 0; i < tiles.Count; i++)
+            {
+                if (tiles[i].CellIndex == cell) return tiles[i];
+            }
+
+            return null;
+        }
+
         void CheckSolved()
         {
             bool solved = true;
             for (int i = 0; i < tiles.Count; i++)
             {
-                if (tiles[i].PieceIndex == tiles[i].CellIndex) continue;
+                PuzzleTile tile = tiles[i];
+
+                // 位置对 + 方向正立 + 没镜像，才算这块复位
+                if (tile.PieceIndex == tile.CellIndex && tile.IsUpright) continue;
 
                 solved = false;
                 break;
@@ -258,7 +539,7 @@ namespace Remiehzla.Puzzle
 
             IsSolved = solved;
 
-            if (solved) Debug.Log($"[PuzzleGrid] 复原完成，用了 {MoveCount} 步。");
+            if (solved) Debug.Log($"[PuzzleGrid] 复原完成，位置交换 {MoveCount} 次。");
         }
 
         static bool IsIdentity(int[] pieces)
@@ -271,7 +552,7 @@ namespace Remiehzla.Puzzle
             return true;
         }
 
-        // ------------------------------------------------------------------ 内部：选格
+        // ------------------------------------------------------------------ 选格
 
         internal void OnTileClicked(PuzzleTile tile)
         {
@@ -287,13 +568,13 @@ namespace Remiehzla.Puzzle
             if (selected != null) selected.SetSelected(true);
         }
 
-        // ------------------------------------------------------------------ 内部：搭 UI
+        // ------------------------------------------------------------------ 搭 UI
 
         void EnsureEventSystem()
         {
             if (EventSystem.current != null) return;
 
-            // 点选需要事件系统，场景里没有就自己建一个
+            // 点选和拖拽都需要事件系统，场景里没有就自己建一个
             var go = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
             go.transform.SetParent(transform, false);
         }
@@ -315,7 +596,7 @@ namespace Remiehzla.Puzzle
             texture.wrapMode = TextureWrapMode.Clamp;
         }
 
-        /// <summary>没给图时的兜底：按格子用不同色相画一张，交换机制照样能测。</summary>
+        /// <summary>没给图时的兜底：按格子用不同色相画一张，交互逻辑照样能测。</summary>
         Texture2D BuildDebugTexture()
         {
             int g = Mathf.Max(2, gridSize);
@@ -360,7 +641,8 @@ namespace Remiehzla.Puzzle
             var canvasGo = new GameObject("PuzzleCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasGo.transform.SetParent(transform, false);
 
-            canvasGo.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
             var scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -378,7 +660,7 @@ namespace Remiehzla.Puzzle
             bg.color = backgroundColor;
             bg.raycastTarget = false;
 
-            // 棋盘容器
+            // 棋盘容器（缩放和平移都作用在它身上）
             var boardGo = new GameObject("Board", typeof(RectTransform));
             boardGo.transform.SetParent(canvasGo.transform, false);
 
@@ -390,6 +672,7 @@ namespace Remiehzla.Puzzle
             boardRect.anchoredPosition = new Vector2(0f, 30f);    // 稍微上移，给提示留位置
 
             // 铺格子
+            ringSprite = BuildRingSprite();     // 16 个格子共用一张描边贴图
             tiles.Clear();
             for (int i = 0; i < gridSize * gridSize; i++) tiles.Add(CreateTile(i));
 
@@ -407,18 +690,25 @@ namespace Remiehzla.Puzzle
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.sizeDelta = new Vector2(tileSize, tileSize);
 
-            // 边框：铺满整格，未选中时就是一圈暗色缝
-            var borderGo = new GameObject("Border", typeof(RectTransform), typeof(Image));
-            borderGo.transform.SetParent(go.transform, false);
-            StretchFull((RectTransform)borderGo.transform);
+            // FlipRoot：只负责水平镜像。放在旋转的外层，
+            // 镜像轴就永远是格子的横轴（也就是屏幕横轴）。
+            var flipGo = new GameObject("FlipRoot", typeof(RectTransform));
+            flipGo.transform.SetParent(go.transform, false);
 
-            var border = borderGo.GetComponent<Image>();
-            border.color = borderIdleColor;
-            border.raycastTarget = false;
+            var flipRect = (RectTransform)flipGo.transform;
+            StretchFull(flipRect);
 
-            // 图块：内缩 borderThickness，露出边框
+            // SpinRoot：只负责旋转。图块和描边都是它的子物体，
+            // 所以转动/翻动的时候描边会跟着这块拼图一起走。
+            var spinGo = new GameObject("SpinRoot", typeof(RectTransform));
+            spinGo.transform.SetParent(flipGo.transform, false);
+
+            var spinRect = (RectTransform)spinGo.transform;
+            StretchFull(spinRect);
+
+            // 图块：内缩 borderThickness，正好被描边圈住
             var pieceGo = new GameObject("Piece", typeof(RectTransform), typeof(RawImage));
-            pieceGo.transform.SetParent(go.transform, false);
+            pieceGo.transform.SetParent(spinGo.transform, false);
 
             var pieceRect = (RectTransform)pieceGo.transform;
             pieceRect.anchorMin = Vector2.zero;
@@ -430,12 +720,70 @@ namespace Remiehzla.Puzzle
             piece.texture = texture;
             piece.raycastTarget = true;
 
+            // 描边：空心方框，跟图块同一个 SpinRoot，画在图块之后（盖在边缘上）
+            var borderGo = new GameObject("Border", typeof(RectTransform), typeof(Image));
+            borderGo.transform.SetParent(spinGo.transform, false);
+            StretchFull((RectTransform)borderGo.transform);
+
+            var border = borderGo.GetComponent<Image>();
+            border.sprite = ringSprite;
+            border.type = Image.Type.Sliced;
+            border.color = borderIdleColor;
+            border.raycastTarget = false;
+
             var tile = go.AddComponent<PuzzleTile>();
-            tile.Init(this, piece, border, rect);
-            tile.Configure(borderIdleColor, borderSelectedColor, selectedScale);
+            tile.Init(this, piece, border, rect, flipRect, spinRect);
+            tile.Configure(borderIdleColor, borderSelectedColor, selectedScale, dragScale);
             tile.CellIndex = index;
 
             return tile;
+        }
+
+        /// <summary>
+        /// 造一张"空心方框"贴图给描边用。
+        /// 走 9 宫格切片，所以放大缩小时线宽不会变形；16 个格子共用这一张。
+        /// </summary>
+        Sprite BuildRingSprite()
+        {
+            int thickness = Mathf.Max(1, Mathf.RoundToInt(borderThickness));
+            int size = thickness * 2 + 4;          // 中间留透明区域给 9 宫格拉伸
+
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                name = "PuzzleFrameRing",
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp
+            };
+
+            var solid = new Color32(255, 255, 255, 255);
+            var clear = new Color32(255, 255, 255, 0);
+            var pixels = new Color32[size * size];
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    bool onRing = x < thickness || x >= size - thickness
+                                  || y < thickness || y >= size - thickness;
+
+                    pixels[y * size + x] = onRing ? solid : clear;
+                }
+            }
+
+            tex.SetPixels32(pixels);
+            tex.Apply(false, true);        // 传完就不再需要 CPU 端副本
+
+            var sprite = Sprite.Create(
+                tex,
+                new Rect(0f, 0f, size, size),
+                new Vector2(0.5f, 0.5f),
+                100f,
+                0,
+                SpriteMeshType.FullRect,
+                new Vector4(thickness, thickness, thickness, thickness));
+
+            sprite.name = "PuzzleFrameRing";
+            return sprite;
         }
 
         void BuildHint(Transform parent)
@@ -447,18 +795,18 @@ namespace Remiehzla.Puzzle
             rect.anchorMin = new Vector2(0.5f, 0f);
             rect.anchorMax = new Vector2(0.5f, 0f);
             rect.pivot = new Vector2(0.5f, 0f);
-            rect.sizeDelta = new Vector2(1100f, 44f);
-            rect.anchoredPosition = new Vector2(0f, 22f);
+            rect.sizeDelta = new Vector2(1400f, 44f);
+            rect.anchoredPosition = new Vector2(0f, 20f);
 
             var text = go.GetComponent<Text>();
             text.font = LoadFont();
-            text.fontSize = 20;
+            text.fontSize = 18;
             text.alignment = TextAnchor.MiddleCenter;
             text.color = new Color(1f, 1f, 1f, 0.72f);
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;
             text.raycastTarget = false;
-            text.text = "左键点选拼图格　↑↓←→ 与相邻格交换　R 重新打乱　Esc 取消选择";
+            text.text = "左键点选 / 拖动交换　↑↓←→ 移动　H K 旋转　J 翻转　滚轮缩放　中键平移　R 重打乱";
         }
 
         static void StretchFull(RectTransform rect)
