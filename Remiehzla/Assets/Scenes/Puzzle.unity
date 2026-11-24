@@ -243,8 +243,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c1f4a6b2d7e4f8aa1b3c5d6e7f80912, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sourceImage: {fileID: 2800000, guid: 63270806c8c96fe4f82251b8680dfea7, type: 3}
-  gridSize: 4
+  sourceImage: {fileID: 2800000, guid: abbc78a2655d28842b6b978af8d6c6ac, type: 3}
+  gridSize: 3
   tileSize: 150
   spacing: 6
   backgroundColor: {r: 0.09, g: 0.1, b: 0.13, a: 1}
@@ -252,8 +252,17 @@ MonoBehaviour:
   borderSelectedColor: {r: 1, g: 0.78, b: 0.25, a: 1}
   borderThickness: 3
   selectedScale: 1.06
+  dragScale: 1.12
+  hoverDimColor: {r: 0.42, g: 0.44, b: 0.52, a: 1}
   moveDuration: 0.2
+  rotateDuration: 0.18
+  flipDuration: 0.16
+  zoomSpeed: 0.15
+  zoomMin: 0.5
+  zoomMax: 3
+  panSpeed: 1
   showHint: 1
+  level: {fileID: 0}
 --- !u!4 &1480126359
 Transform:
   m_ObjectHideFlags: 0
