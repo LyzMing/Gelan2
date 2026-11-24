@@ -40,6 +40,7 @@ namespace Remiehzla.Explore
         public int sortBias;
 
         SortingGroup sortingGroup;
+        int[] localOrders;
         int lastOrder = int.MinValue;
 
         void Awake()
@@ -51,6 +52,17 @@ namespace Remiehzla.Explore
 
             if (sortingGroup == null && (renderers == null || renderers.Length == 0))
                 renderers = GetComponentsInChildren<Renderer>(true);
+
+            // 记下每个渲染器初始的 sortingOrder，作为"组内前后关系"的偏移量。
+            // 这样一个父物体挂 YSort、下面多张子图各自设过 order 时，
+            // 整组一起前后移动，但子图之间的相对前后不会被压平。
+            if (renderers != null)
+            {
+                localOrders = new int[renderers.Length];
+
+                for (int i = 0; i < renderers.Length; i++)
+                    localOrders[i] = renderers[i] != null ? renderers[i].sortingOrder : 0;
+            }
         }
 
         void LateUpdate()
@@ -80,7 +92,9 @@ namespace Remiehzla.Explore
             {
                 if (renderers[i] == null) continue;
 
-                renderers[i].sortingOrder = order;
+                int local = localOrders != null && i < localOrders.Length ? localOrders[i] : 0;
+
+                renderers[i].sortingOrder = order + local;
             }
         }
 
