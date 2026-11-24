@@ -53,6 +53,8 @@ namespace Remiehzla.Flow
 
             // 以 PuzzleGrid 上挂的关卡为准（棋盘在 Awake 里已经按它建好了）
             if (level == null && grid != null) level = grid.level;
+
+            GameEvents.ItemCollected += OnItemCollected;
         }
 
         void Start()
@@ -62,10 +64,21 @@ namespace Remiehzla.Flow
 
         void OnDestroy()
         {
+            GameEvents.ItemCollected -= OnItemCollected;
+
             if (puzzleUI == null) return;
 
             puzzleUI.Confirmed -= OnPuzzleConfirmed;
             puzzleUI.Rejected -= OnPuzzleRejected;
+        }
+
+        /// <summary>收集品统一记进本关上下文（存档由 ProgressService 负责）。</summary>
+        void OnItemCollected(string itemId)
+        {
+            if (Context == null || string.IsNullOrEmpty(itemId)) return;
+            if (Context.collected.Contains(itemId)) return;
+
+            Context.collected.Add(itemId);
         }
 
         // ------------------------------------------------------------------ 阶段切换

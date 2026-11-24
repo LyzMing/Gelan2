@@ -82,4 +82,5 @@ MonoBehaviour:
     moveLimit: 0
     allowShuffleInGame: 0
   exploreSceneName: 
-  collectibles: []
+  collectibles:
+  - L01_PHOTO
