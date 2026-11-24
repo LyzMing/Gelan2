@@ -224,6 +224,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1480126359}
   - component: {fileID: 1480126358}
+  - component: {fileID: 1480126360}
   m_Layer: 0
   m_Name: Puzzle
   m_TagString: Untagged
@@ -261,8 +262,22 @@ MonoBehaviour:
   zoomMin: 0.5
   zoomMax: 3
   panSpeed: 1
-  showHint: 1
-  level: {fileID: 0}
+  shakeDuration: 0.28
+  shakeStrength: 16
+  shakeFrequency: 26
+  level: {fileID: 11400000, guid: bf46af72f80a8044d8a085e2242f3ed2, type: 2}
+--- !u!114 &1480126360
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1480126357}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a7d3e91c4b24a8e9f1d2c3b4a5e6f70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &1480126359
 Transform:
   m_ObjectHideFlags: 0

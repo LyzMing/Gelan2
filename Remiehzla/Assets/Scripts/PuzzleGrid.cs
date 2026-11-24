@@ -79,9 +79,15 @@ namespace Remiehzla.Puzzle
         [Tooltip("中键平移的跟随倍率，1 = 画面完全跟手。")]
         public float panSpeed = 1f;
 
-        [Header("提示")]
-        [Tooltip("在屏幕下方显示一行操作提示。")]
-        public bool showHint = true;
+        [Header("判定反馈")]
+        [Tooltip("点“确定”但没拼对时的抖动时长（秒），0 = 不抖")]
+        public float shakeDuration = 0.28f;
+
+        [Tooltip("抖动幅度（像素）")]
+        public float shakeStrength = 16f;
+
+        [Tooltip("抖动频率")]
+        public float shakeFrequency = 26f;
 
         [Header("关卡数据")]
         [Tooltip("指向本关的 LevelDefinition。填了就由它决定 gridSize / 图片 / 初始布局 / 正解；" +
@@ -119,6 +125,12 @@ namespace Remiehzla.Puzzle
 
         Vector2 dragGrabOffset;
         Vector3 lastPanMousePosition;
+
+        // ---- 平移 / 抖动 ----
+        Vector2 panPosition;
+        Vector2 shakeOffset;
+        float shakeTime;
+        bool shaking;
 
         // ---- 复制 / 粘贴 ----
         bool copyMode;              // true = 手上拿着一块"复制体"，等左键放下
@@ -229,12 +241,91 @@ namespace Remiehzla.Puzzle
             return cells;
         }
 
+        // ------------------------------------------------------------------ 操作开关 / 判定
+
+        /// <summary>这一关是否允许某个操作。没配关卡资产时全部开放（原型模式）。</summary>
+        public bool Allows(PuzzleOps op)
+        {
+            if (level == null || level.puzzle == null) return true;
+
+            return (level.puzzle.allowedOps & op) != 0;
+        }
+
+        /// <summary>这一关实际生效的操作集（没配关卡时全开）。给 UI 生成提示用。</summary>
+        public PuzzleOps ActiveOps => level != null && level.puzzle != null
+            ? level.puzzle.allowedOps
+            : (PuzzleOps)(-1);
+
+        /// <summary>当前关卡资产，可能为 null（原型模式）。</summary>
+        public LevelDefinition Level => level;
+
+        /// <summary>是否允许游戏内重打乱（调试用，正式关卡默认关）。</summary>
+        public bool CanShuffle => level == null || level.puzzle == null || level.puzzle.allowShuffleInGame;
+
+        /// <summary>
+        /// 玩家点"确定"时调用：重新判定一次并返回结果。
+        /// 不通过时由调用方决定要不要播抖动反馈。
+        /// </summary>
+        public bool Confirm(out PuzzleResult result)
+        {
+            CheckSolved();
+
+            result = new PuzzleResult
+            {
+                levelId = level != null ? level.levelId : "",
+                solutionId = SolutionId,
+                isHidden = IsHiddenSolution,
+                solved = IsSolved,
+                moveCount = MoveCount
+            };
+
+            return IsSolved;
+        }
+
+        /// <summary>判定失败的抖动反馈。</summary>
+        public void PlayWrongShake()
+        {
+            if (shakeDuration <= 0f) return;
+
+            shaking = true;
+            shakeTime = 0f;
+        }
+
+        void TickShake(float deltaTime)
+        {
+            if (!shaking) return;
+
+            shakeTime += deltaTime;
+
+            float t = Mathf.Clamp01(shakeTime / Mathf.Max(0.0001f, shakeDuration));
+            float damp = 1f - t;
+
+            shakeOffset = new Vector2(Mathf.Sin(shakeTime * shakeFrequency) * shakeStrength * damp, 0f);
+
+            if (t >= 1f)
+            {
+                shaking = false;
+                shakeOffset = Vector2.zero;
+            }
+
+            ApplyBoardTransform();
+        }
+
+        /// <summary>棋盘位置 = 平移量 + 抖动偏移。所有改位置的地方都要走这里。</summary>
+        void ApplyBoardTransform()
+        {
+            if (boardRect == null) return;
+
+            boardRect.anchoredPosition = panPosition + shakeOffset;
+        }
+
         void Update()
         {
             // 动画先推进，避免输入一多就积压着不动
             float dt = Time.deltaTime;
             for (int i = 0; i < tiles.Count; i++) tiles[i].TickAnimation(dt);
 
+            TickShake(dt);
             HandleCameraInput();
             HandleInput();
             UpdateGhost(dt);
@@ -256,8 +347,7 @@ namespace Remiehzla.Puzzle
             if (Input.GetKeyDown(KeyCode.R))
             {
                 // 正式关卡默认关掉重打乱，避免绕过策划摆好的初始状态
-                bool canShuffle = level == null || level.puzzle == null || level.puzzle.allowShuffleInGame;
-                if (canShuffle) Shuffle();
+                if (CanShuffle) Shuffle();
 
                 return;
             }
@@ -268,11 +358,14 @@ namespace Remiehzla.Puzzle
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.Z)) { Undo(); return; }                     // 撤销
-            if (Input.GetKeyDown(KeyCode.C)) { BeginCopy(); return; }                // 复制
-            if (Input.GetKeyDown(KeyCode.K)) { RotateSelected(true); return; }      // 顺时针
-            if (Input.GetKeyDown(KeyCode.H)) { RotateSelected(false); return; }     // 逆时针
-            if (Input.GetKeyDown(KeyCode.J)) { FlipSelected(); return; }            // 水平翻转
+            // 下面每一项都由关卡的 allowedOps 决定，配了哪些就只响应哪些
+            if (Allows(PuzzleOps.Undo) && Input.GetKeyDown(KeyCode.Z)) { Undo(); return; }                  // 撤回
+            if (Allows(PuzzleOps.Copy) && Input.GetKeyDown(KeyCode.C)) { BeginCopy(); return; }              // 复制
+            if (Allows(PuzzleOps.Rotate) && Input.GetKeyDown(KeyCode.K)) { RotateSelected(true); return; }   // 顺时针
+            if (Allows(PuzzleOps.Rotate) && Input.GetKeyDown(KeyCode.H)) { RotateSelected(false); return; }  // 逆时针
+            if (Allows(PuzzleOps.Flip) && Input.GetKeyDown(KeyCode.J)) { FlipSelected(); return; }           // 水平翻转
+
+            if (!Allows(PuzzleOps.SwapAdjacent)) return;
 
             int dx = 0, dy = 0;
             if (Input.GetKeyDown(KeyCode.UpArrow)) dy = -1;         // 行号向上减小
@@ -434,6 +527,8 @@ namespace Remiehzla.Puzzle
 
             // 复制模式 / 复制体还在飞的时候，左键是用来放下的，不响应拖拽
             if (copyMode || ghost != null) return;
+
+            if (!Allows(PuzzleOps.Drag)) return;
 
             Select(tile);
             dragging = tile;
@@ -777,7 +872,8 @@ namespace Remiehzla.Puzzle
                 if (boardRect != null)
                 {
                     float scaleFactor = canvas != null && canvas.scaleFactor > 0f ? canvas.scaleFactor : 1f;
-                    boardRect.anchoredPosition += new Vector2(delta.x, delta.y) / scaleFactor * panSpeed;
+                    panPosition += new Vector2(delta.x, delta.y) / scaleFactor * panSpeed;
+                    ApplyBoardTransform();
                 }
             }
         }
@@ -800,9 +896,10 @@ namespace Remiehzla.Puzzle
             // 再按"本地坐标 * 缩放"补回位置差，光标下的点就会停在原地。
             Vector2 local;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(boardRect, Input.mousePosition, null, out local))
-                boardRect.anchoredPosition += local * (oldScale - newScale);
+                panPosition += local * (oldScale - newScale);
 
             boardRect.localScale = new Vector3(newScale, newScale, 1f);
+            ApplyBoardTransform();
         }
 
         // ------------------------------------------------------------------ 切图与布局
@@ -946,6 +1043,8 @@ namespace Remiehzla.Puzzle
             // 复制体是临时物体，不算可选的格子
             if (tile == null || tile == ghost) return;
 
+            if (!Allows(PuzzleOps.Select)) return;
+
             Select(selected == tile ? null : tile);
         }
 
@@ -1066,14 +1165,14 @@ namespace Remiehzla.Puzzle
             boardRect.anchorMax = new Vector2(0.5f, 0.5f);
             boardRect.pivot = new Vector2(0.5f, 0.5f);
             boardRect.sizeDelta = new Vector2(boardSize, boardSize);
-            boardRect.anchoredPosition = new Vector2(0f, 30f);    // 稍微上移，给提示留位置
+
+            panPosition = new Vector2(0f, 30f);     // 稍微上移，给底部 UI 留位置
+            ApplyBoardTransform();
 
             // 铺格子
             ringSprite = BuildRingSprite();     // 16 个格子共用一张描边贴图
             tiles.Clear();
             for (int i = 0; i < gridSize * gridSize; i++) tiles.Add(CreateTile(i));
-
-            if (showHint) BuildHint(canvasGo.transform);
         }
 
         PuzzleTile CreateTile(int index)
@@ -1183,62 +1282,12 @@ namespace Remiehzla.Puzzle
             return sprite;
         }
 
-        void BuildHint(Transform parent)
-        {
-            var go = new GameObject("Hint", typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = new Vector2(0.5f, 0f);
-            rect.anchorMax = new Vector2(0.5f, 0f);
-            rect.pivot = new Vector2(0.5f, 0f);
-            rect.sizeDelta = new Vector2(1400f, 44f);
-            rect.anchoredPosition = new Vector2(0f, 20f);
-
-            var text = go.GetComponent<Text>();
-            text.font = LoadFont();
-            text.fontSize = 18;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.color = new Color(1f, 1f, 1f, 0.72f);
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
-            text.raycastTarget = false;
-            text.text = "左键点选/拖动交换　↑↓←→ 移动　H K 旋转　J 翻转　C 复制　Z 撤销　R 重打乱　滚轮缩放　中键平移";
-        }
-
         static void StretchFull(RectTransform rect)
         {
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
-        }
-
-        /// <summary>优先用系统里的中文字体，内置的 LegacyRuntime.ttf 没有中文字形。</summary>
-        static Font LoadFont()
-        {
-            try
-            {
-                var font = Font.CreateDynamicFontFromOSFont(
-                    new[] { "Microsoft YaHei", "微软雅黑", "SimHei", "PingFang SC", "Arial" }, 24);
-                if (font != null) return font;
-            }
-            catch
-            {
-                // 忽略，继续试内置字体
-            }
-
-            try
-            {
-                var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                if (font != null) return font;
-            }
-            catch
-            {
-                // 忽略
-            }
-
-            return null;
         }
     }
 }

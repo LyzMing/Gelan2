@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Remiehzla.Puzzle
 {
     /// <summary>
-    /// 一关允许的操作。按策划案的逐关解锁顺序勾选。
+    /// 一关允许的操作。逐关在 PuzzleConfig.allowedOps 里勾选，代码不做任何硬编码。
     /// </summary>
     [Flags]
     public enum PuzzleOps
@@ -12,27 +12,35 @@ namespace Remiehzla.Puzzle
         None = 0,
 
         /// <summary>左键点选。</summary>
+        [InspectorName("点选")]
         Select = 1 << 0,
 
         /// <summary>↑↓←→ 与相邻格交换。</summary>
+        [InspectorName("平移（方向键交换相邻格）")]
         SwapAdjacent = 1 << 1,
 
-        /// <summary>锁定 A 再选 B，任意两块互换（第 3 关 B 键）。</summary>
-        SwapAny = 1 << 2,
-
         /// <summary>H / K 旋转 90°。</summary>
-        Rotate = 1 << 3,
+        [InspectorName("旋转（H/K）")]
+        Rotate = 1 << 2,
 
         /// <summary>J 水平镜像翻转。</summary>
-        Flip = 1 << 4,
-
-        /// <summary>C 复制 + 左键放下覆盖。</summary>
-        Copy = 1 << 5,
+        [InspectorName("水平翻转（J）")]
+        Flip = 1 << 3,
 
         /// <summary>左键拖拽交换。</summary>
-        Drag = 1 << 6,
+        [InspectorName("拖动")]
+        Drag = 1 << 4,
+
+        /// <summary>C 复制 + 左键放下覆盖。</summary>
+        [InspectorName("复制（C）")]
+        Copy = 1 << 5,
+
+        /// <summary>Z 撤销上一步。</summary>
+        [InspectorName("撤回（Z）")]
+        Undo = 1 << 6,
 
         /// <summary>关卡内存在错乱块（影响显示与判定，不拦截输入）。</summary>
+        [InspectorName("错乱块")]
         Corrupted = 1 << 7,
     }
 
@@ -117,6 +125,26 @@ namespace Remiehzla.Puzzle
         {
             cells = new CellState[count];
             for (int i = 0; i < count; i++) cells[i] = new CellState(i);
+        }
+    }
+
+    /// <summary>
+    /// 玩家点"确定"后得到的判定结果。solutionId 会传给探索阶段做分支。
+    /// </summary>
+    [Serializable]
+    public struct PuzzleResult
+    {
+        public string levelId;
+        public string solutionId;
+        public bool isHidden;
+        public bool solved;
+        public int moveCount;
+
+        public override string ToString()
+        {
+            return solved
+                ? $"{levelId}: 通过 {solutionId}{(isHidden ? "（隐藏解）" : "")}，{moveCount} 次交换"
+                : $"{levelId}: 未通过，{moveCount} 次交换";
         }
     }
 }
