@@ -83,8 +83,19 @@ namespace Remiehzla.Puzzle
         [Tooltip("在屏幕下方显示一行操作提示。")]
         public bool showHint = true;
 
-        /// <summary>当前是否已经拼好（位置对 + 方向都正立）。</summary>
+        [Header("关卡数据")]
+        [Tooltip("指向本关的 LevelDefinition。填了就由它决定 gridSize / 图片 / 初始布局 / 正解；" +
+                 "留空则用上面 Inspector 里的裸参数随机打乱（原型模式）")]
+        public LevelDefinition level;
+
+        /// <summary>当前是否已经拼好（与某一个正解完全一致）。</summary>
         public bool IsSolved { get; private set; }
+
+        /// <summary>拼好时匹配到的解 id；没拼好为 null。</summary>
+        public string SolutionId { get; private set; }
+
+        /// <summary>当前匹配的解是否隐藏解。</summary>
+        public bool IsHiddenSolution { get; private set; }
 
         /// <summary>本次打乱以来位置交换了几次（旋转/翻转不算步数）。</summary>
         public int MoveCount { get; private set; }
@@ -140,6 +151,8 @@ namespace Remiehzla.Puzzle
 
         void Awake()
         {
+            ApplyLevelConfig();
+
             EnsureEventSystem();
             EnsureTexture();
             BuildUI();
@@ -147,7 +160,73 @@ namespace Remiehzla.Puzzle
 
         void Start()
         {
-            Shuffle();
+            if (!LoadInitialLayout()) Shuffle();
+        }
+
+        /// <summary>用关卡资产覆盖 Inspector 上的裸参数（图片 / 格数）。</summary>
+        void ApplyLevelConfig()
+        {
+            if (level == null || level.puzzle == null) return;
+
+            gridSize = Mathf.Clamp(level.puzzle.gridSize, 2, 8);
+
+            if (level.puzzle.image != null) sourceImage = level.puzzle.image;
+        }
+
+        /// <summary>载入策划摆好的初始布局；没有可用布局时返回 false（由调用方退回随机打乱）。</summary>
+        public bool LoadInitialLayout()
+        {
+            if (level == null || level.puzzle == null) return false;
+
+            PuzzleLayout layout = level.puzzle.initial;
+
+            if (layout == null || layout.cells == null || layout.cells.Length != tiles.Count)
+            {
+                Debug.LogWarning($"[PuzzleGrid] {(level == null ? "关卡" : level.levelId)} 没有可用的初始布局，" +
+                                 "已退回随机打乱。请用 工具 → 拼图布局编辑器 摆好初始状态。");
+                return false;
+            }
+
+            ApplyLayout(layout);
+
+            MoveCount = 0;
+            Select(null);
+            CheckSolved();
+
+            Debug.Log($"[PuzzleGrid] 已载入关卡 {level.levelId} 的初始布局（{gridSize}×{gridSize}）");
+
+            return true;
+        }
+
+        /// <summary>把一份布局铺到棋盘上（不做动画）。</summary>
+        public void ApplyLayout(PuzzleLayout layout)
+        {
+            if (layout == null) return;
+
+            for (int cell = 0; cell < tiles.Count; cell++)
+            {
+                PuzzleTile tile = tiles[cell];
+                CellState state = cell < layout.cells.Length ? layout.cells[cell] : new CellState(cell);
+
+                tile.CellIndex = cell;
+                DisplayPiece(tile, state.pieceIndex);
+                tile.RestoreOrientation(state.turnSteps, state.flipped, -90f * state.turnSteps, 0f);
+                PlaceTile(tile, false);
+            }
+        }
+
+        /// <summary>把当前棋盘状态抓成一份布局快照（按格子下标，行优先）。</summary>
+        public CellState[] SnapshotCells()
+        {
+            var cells = new CellState[tiles.Count];
+
+            for (int i = 0; i < tiles.Count; i++)
+            {
+                PuzzleTile tile = tiles[i];
+                cells[tile.CellIndex] = new CellState(tile.PieceIndex, tile.TurnSteps, tile.FlippedX);
+            }
+
+            return cells;
         }
 
         void Update()
@@ -176,7 +255,10 @@ namespace Remiehzla.Puzzle
 
             if (Input.GetKeyDown(KeyCode.R))
             {
-                Shuffle();
+                // 正式关卡默认关掉重打乱，避免绕过策划摆好的初始状态
+                bool canShuffle = level == null || level.puzzle == null || level.puzzle.allowShuffleInGame;
+                if (canShuffle) Shuffle();
+
                 return;
             }
 
@@ -727,7 +809,10 @@ namespace Remiehzla.Puzzle
 
         void DisplayPiece(PuzzleTile tile, int pieceIndex)
         {
-            tile.Display(pieceIndex, texture, UvRect(pieceIndex));
+            // 错乱块（-1）没有对应的图块区域，给个整图 UV 让它真的透明
+            Rect uv = pieceIndex >= 0 ? UvRect(pieceIndex) : new Rect(0f, 0f, 1f, 1f);
+
+            tile.Display(pieceIndex, texture, uv);
         }
 
         /// <summary>原图第 pieceIndex 块在整图里的 UV 矩形（0 = 左上角，行优先）。</summary>
@@ -806,23 +891,35 @@ namespace Remiehzla.Puzzle
             return null;
         }
 
+        /// <summary>
+        /// 判定当前棋盘是否与某个正解完全一致。
+        /// 有 LevelDefinition 时按 solutions 比对；没有时退回"每块回原位且正立"的原型判定。
+        /// 注意：这里只是更新状态，真正的"过关"要等玩家点确认（由流程层调用）。
+        /// </summary>
         void CheckSolved()
         {
-            bool solved = true;
-            for (int i = 0; i < tiles.Count; i++)
+            CellState[] cells = SnapshotCells();
+
+            bool wasSolved = IsSolved;
+            bool hidden = false;
+            string matched = null;
+
+            if (level != null && level.puzzle != null
+                && level.puzzle.solutions != null && level.puzzle.solutions.Length > 0)
             {
-                PuzzleTile tile = tiles[i];
-
-                // 位置对 + 方向正立 + 没镜像，才算这块复位
-                if (tile.PieceIndex == tile.CellIndex && tile.IsUpright) continue;
-
-                solved = false;
-                break;
+                matched = PuzzleRules.MatchSolution(level.puzzle.solutions, cells, out hidden);
+            }
+            else if (PuzzleRules.IsIdentity(cells))
+            {
+                matched = "normal";
             }
 
-            IsSolved = solved;
+            IsSolved = matched != null;
+            SolutionId = matched;
+            IsHiddenSolution = hidden;
 
-            if (solved) Debug.Log($"[PuzzleGrid] 复原完成，位置交换 {MoveCount} 次。");
+            if (IsSolved && !wasSolved)
+                Debug.Log($"[PuzzleGrid] 与正解一致：{matched}{(hidden ? "（隐藏解）" : "")}，交换 {MoveCount} 次。");
         }
 
         static bool IsIdentity(int[] pieces)
