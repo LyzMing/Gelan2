@@ -5,7 +5,6 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -70,7 +69,6 @@ namespace DialogueDemo.EditorTools
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            BuildLighting();
             BuildCamera();
             BuildRoom();
             GameObject player = BuildPlayer();
@@ -108,18 +106,6 @@ namespace DialogueDemo.EditorTools
 
             cameraObject.AddComponent<AudioListener>();
             cameraObject.transform.position = new Vector3(0f, 0f, -10f);
-
-            var cameraData = cameraObject.AddComponent<UniversalAdditionalCameraData>();
-            cameraData.renderType = CameraRenderType.Base;
-        }
-
-        static void BuildLighting()
-        {
-            var lightObject = new GameObject("Global Light 2D");
-            var light = lightObject.AddComponent<Light2D>();
-            light.lightType = Light2D.LightType.Global;
-            light.color = new Color(1f, 0.97f, 0.92f);
-            light.intensity = 1.05f;
         }
 
         static void BuildRoom()
@@ -463,8 +449,9 @@ namespace DialogueDemo.EditorTools
         {
             if (cachedSpriteLit == null)
             {
-                cachedSpriteLit = GetOrCreateMaterial(
-                    "SpriteLit", "Universal Render Pipeline/2D/Sprite-Lit-Default");
+                // 本工程用的是内置渲染管线，没有 Sprite-Lit 着色器；
+                // 精灵统一用 Sprites/Default（不受光），材质名保留以免旧场景引用丢失。
+                cachedSpriteLit = GetOrCreateMaterial("SpriteLit", "Sprites/Default");
             }
             return cachedSpriteLit;
         }

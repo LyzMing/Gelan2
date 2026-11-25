@@ -2,8 +2,6 @@ using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
 namespace DialogueDemo.EditorTools
@@ -69,13 +67,6 @@ namespace DialogueDemo.EditorTools
 
             var camera = Camera.main;
             Check("场景中有正交相机", camera != null && camera.orthographic);
-            Check("工程启用了 URP", GraphicsSettings.defaultRenderPipeline is UniversalRenderPipelineAsset);
-            Check("相机挂有 URP Camera Data",
-                camera != null && camera.GetComponent<UniversalAdditionalCameraData>() != null);
-
-            var light2D = Object.FindObjectOfType<Light2D>();
-            Check("场景中有 Global Light 2D",
-                light2D != null && light2D.lightType == Light2D.LightType.Global);
 
             var player = GameObject.FindGameObjectWithTag("Player");
             Check("场景中有 Player（Tag=Player）", player != null);
@@ -91,9 +82,8 @@ namespace DialogueDemo.EditorTools
                 var visual = player.transform.Find("Visual");
                 var renderer = visual != null ? visual.GetComponent<SpriteRenderer>() : null;
                 Check("Player 有精灵", renderer != null && renderer.sprite != null);
-                Check("Player 使用 URP Sprite-Lit 材质",
-                    renderer != null && renderer.sharedMaterial != null &&
-                    renderer.sharedMaterial.shader.name.Contains("Sprite-Lit"));
+                Check("Player 精灵带材质",
+                    renderer != null && renderer.sharedMaterial != null);
             }
 
             var items = Object.FindObjectsOfType<InteractableItem2D>();
