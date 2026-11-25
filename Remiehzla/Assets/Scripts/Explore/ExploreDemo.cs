@@ -63,9 +63,12 @@ namespace Remiehzla.Explore
             CreateQuadChild("Top", table, new Vector3(0f, 0.95f, 0f), new Vector2(2.4f, 0.2f), propColor, 0);
             CreateQuadChild("Leg_L", table, new Vector3(-1.05f, 0f, 0f), new Vector2(0.18f, 1f), propColor, 0);
             CreateQuadChild("Leg_R", table, new Vector3(1.05f, 0f, 0f), new Vector2(0.18f, 1f), propColor, 0);
+            AddBox(table, new Vector2(2.4f, 1.15f), new Vector2(0f, 0.575f));   // 整张桌子挡住脚
 
-            CreateQuad("Shelf", new Vector3(-3.2f, -0.6f, 0f), new Vector2(1.2f, 2f), propColor, 0, true);
-            CreateQuad("Crate", new Vector3(5f, -2f, 0f), new Vector2(1f, 1f), propColor, 0, true);
+            CreateQuad("Shelf", new Vector3(-3.2f, -0.6f, 0f), new Vector2(1.2f, 2f), propColor, 0, true, true);
+            CreateQuad("Crate", new Vector3(5f, -2f, 0f), new Vector2(1f, 1f), propColor, 0, true, true);
+
+            CreateWalls();
 
             // 可拾取物
             Transform pickup = CreateQuad("Pickup_Photo", new Vector3(3.4f, -0.9f, 0f), new Vector2(0.45f, 0.45f), pickupColor, 0, true);
@@ -74,7 +77,7 @@ namespace Remiehzla.Explore
             pickupBehaviour.promptOverride = "捡起合照";
 
             // 门
-            Transform door = CreateQuad("Door", new Vector3(7f, -1.4f, 0f), new Vector2(1.1f, 2.2f), doorColor, 0, true);
+            Transform door = CreateQuad("Door", new Vector3(7f, -1.4f, 0f), new Vector2(1.1f, 2.2f), doorColor, 0, true, true);
             var doorBehaviour = door.gameObject.AddComponent<DoorInteractable>();
             doorBehaviour.targetSceneName = "L02_Classroom";
             doorBehaviour.promptOverride = "进入下一关";
@@ -91,13 +94,45 @@ namespace Remiehzla.Explore
             BuildUI(player.gameObject);
         }
 
-        Transform CreateQuad(string quadName, Vector3 position, Vector2 size, Color color, int sortingOrder, bool sortByY)
+        Transform CreateQuad(string quadName, Vector3 position, Vector2 size, Color color, int sortingOrder,
+            bool sortByY, bool withCollider = false)
         {
             Transform quad = CreateQuadChild(quadName, transform, position, size, color, sortingOrder);
 
             if (sortByY) quad.gameObject.AddComponent<YSort>();
 
+            // 1×1 的 sprite 被 localScale 拉成 size，所以默认 Box(1,1) 正好贴合
+            if (withCollider) AddBox(quad, Vector2.one, new Vector2(0f, 0.5f));
+
             return quad;
+        }
+
+        /// <summary>房间四周围一圈看不见的墙，防止玩家走出场景。</summary>
+        void CreateWalls()
+        {
+            var walls = new GameObject("Walls").transform;
+            walls.SetParent(transform, false);
+
+            AddWall(walls, new Vector3(0f, 4.75f, 0f), new Vector2(16.5f, 0.5f));
+            AddWall(walls, new Vector3(0f, -4.75f, 0f), new Vector2(16.5f, 0.5f));
+            AddWall(walls, new Vector3(-8.25f, 0f, 0f), new Vector2(0.5f, 9.5f));
+            AddWall(walls, new Vector3(8.25f, 0f, 0f), new Vector2(0.5f, 9.5f));
+        }
+
+        static void AddWall(Transform parent, Vector3 center, Vector2 size)
+        {
+            var go = new GameObject("Wall", typeof(BoxCollider2D));
+            go.transform.SetParent(parent, false);
+            go.transform.position = center;
+
+            go.GetComponent<BoxCollider2D>().size = size;   // 无缩放，local = world
+        }
+
+        static void AddBox(Transform target, Vector2 size, Vector2 offset)
+        {
+            var box = target.gameObject.AddComponent<BoxCollider2D>();
+            box.size = size;
+            box.offset = offset;
         }
 
         Transform CreateQuadChild(string quadName, Transform parent, Vector3 localPosition, Vector2 size, Color color, int sortingOrder)

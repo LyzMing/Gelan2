@@ -1,0 +1,10 @@
+﻿{
+    "AutoStartServer":  true,
+    "AllowRemoteConnections":  false,
+    "NpmExecutablePath":  "",
+    "EnableInfoLogs":  false,
+    "Port":  8090,
+    "AllowPackageInstallation":  false,
+    "RequestTimeoutSeconds":  10,
+    "AllowBatchModeServer":  false
+}

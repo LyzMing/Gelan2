@@ -168,3 +168,12 @@ $RECYCLE.BIN/
 # 临时预览图 / 分析产物（不入库）
 # -----------------------------------------------------------------------------
 /puzzle_*.png
+
+# -----------------------------------------------------------------------------
+# MCP（Unity 编辑器桥接）本机工具目录
+#   Tools/mcp-unity-server 由 mcp-unity 的 Server~ 源码构建，可 npm install + build 重建
+# -----------------------------------------------------------------------------
+/Tools/mcp-unity-server/node_modules/
+/Tools/mcp-unity-server/build/
+/Tools/.npm-cache/
+/.tmp-npm-cache/
