@@ -265,19 +265,7 @@ MonoBehaviour:
   shakeDuration: 0.28
   shakeStrength: 16
   shakeFrequency: 26
-  level: {fileID: 11400000, guid: bf46af72f80a8044d8a085e2242f3ed2, type: 2}
---- !u!114 &1480126360
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1480126357}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a7d3e91c4b24a8e9f1d2c3b4a5e6f70, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  level: {fileID: 11400000, guid: c269591df6a17914297047708c85be67, type: 2}
 --- !u!4 &1480126359
 Transform:
   m_ObjectHideFlags: 0
@@ -293,6 +281,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1480126360
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1480126357}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a7d3e91c4b24a8e9f1d2c3b4a5e6f70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  grid: {fileID: 0}
+  titleFormat: '{0}'
+  stepFormat: "\u6B65\u6570\uFF1A{0}"
+  confirmLabel: "\u786E\u5B9A"
+  shuffleLabel: "\u91CD\u65B0\u6253\u4E71"
+  wrongHint: "\u8FD8\u5DEE\u4E00\u70B9\uFF0C\u518D\u8BD5\u8BD5"
+  solvedHint: "\u62FC\u597D\u4E86"
+  textColor: {r: 1, g: 1, b: 1, a: 0.92}
+  hintColor: {r: 1, g: 1, b: 1, a: 0.62}
+  buttonColor: {r: 1, g: 0.78, b: 0.25, a: 1}
+  buttonTextColor: {r: 0.12, g: 0.12, b: 0.14, a: 1}
+  wrongToastColor: {r: 1, g: 0.45, b: 0.45, a: 1}
+  solvedToastColor: {r: 0.55, g: 0.95, b: 0.6, a: 1}
+  referenceResolution: {x: 1280, y: 720}
+  titleFontSize: 26
+  bodyFontSize: 18
+  buttonFontSize: 22
+  toastFontSize: 24
+  toastHold: 1.4
 --- !u!1 &2100000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -337,6 +356,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b2c4d5e6f8a47b9c0d1e2f3a4b5c6d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  groundColor: {r: 0.16, g: 0.17, b: 0.2, a: 1}
+  propColor: {r: 0.32, g: 0.3, b: 0.36, a: 1}
+  playerColor: {r: 0.95, g: 0.85, b: 0.55, a: 1}
+  pickupColor: {r: 1, g: 0.78, b: 0.25, a: 1}
+  doorColor: {r: 0.35, g: 0.85, b: 0.55, a: 1}
+  variantColor: {r: 0.65, g: 0.45, b: 0.95, a: 1}
+  showHint: 1
 --- !u!1 &2100000011
 GameObject:
   m_ObjectHideFlags: 0
