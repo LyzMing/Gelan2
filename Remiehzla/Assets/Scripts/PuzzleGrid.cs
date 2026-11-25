@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Remiehzla.Flow;
 
 namespace Remiehzla.Puzzle
 {
@@ -178,6 +179,9 @@ namespace Remiehzla.Puzzle
         /// <summary>用关卡资产覆盖 Inspector 上的裸参数（图片 / 格数）。</summary>
         void ApplyLevelConfig()
         {
+            // 从上一关过来时，GameSession 指定这次打哪一关（一个拼图场景可以复用于所有关卡）
+            if (GameSession.PendingLevel != null) level = GameSession.PendingLevel;
+
             if (level == null || level.puzzle == null) return;
 
             gridSize = Mathf.Clamp(level.puzzle.gridSize, 2, 8);

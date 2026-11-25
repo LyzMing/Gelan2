@@ -1,17 +1,19 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Remiehzla.Puzzle;
 using Remiehzla.UI;
 
 namespace Remiehzla.Flow
 {
     /// <summary>
-    /// 关卡流程状态机（最小版）：Puzzle → 判定 → Explore →（门）→ Cleared。
+    /// 拼图场景的流程入口：Puzzle → 判定 → 进探索。
     ///
-    /// 它只管两件事：
-    ///   1. 切换「拼图根节点」和「探索根节点」的激活状态（两者互斥）；
-    ///   2. 通过 <see cref="GameEvents"/> 广播阶段变化，让对话/角色/转场系统自己响应。
+    /// 两种接法（看 LevelDefinition.exploreSceneName）：
+    ///   · 填了场景名 → 判定通过后加载那个探索场景（推荐，一关一个探索场景）
+    ///   · 留空 → 在本场景里关掉 puzzleRoot、打开 exploreRoot（旧模式，仍可用）
     ///
-    /// 对话、转场、场景加载都还没接（等对方的系统就位，M2 补）。
+    /// 跨场景的数据通过 <see cref="GameSession"/> 传，探索场景那边由
+    /// <see cref="ExploreSceneController"/> 接手。
     /// </summary>
     [DisallowMultipleComponent]
     public class LevelDirector : MonoBehaviour
@@ -25,7 +27,7 @@ namespace Remiehzla.Flow
         }
 
         [Header("关卡数据")]
-        [Tooltip("留空则用 PuzzleGrid 上挂的那个关卡资产")]
+        [Tooltip("留空则用 PuzzleGrid 上挂的那个关卡资产；从上一关过来时优先用 GameSession.PendingLevel")]
         public LevelDefinition level;
 
         [Header("场景节点（互斥，留空则跳过）")]
@@ -48,6 +50,10 @@ namespace Remiehzla.Flow
 
         void Awake()
         {
+            // 从上一关过来时，由 GameSession 指定这次打哪一关
+            // （这里不要清空 PendingLevel：组件 Awake 顺序不确定，PuzzleGrid 也要读它）
+            if (GameSession.PendingLevel != null) level = GameSession.PendingLevel;
+
             if (grid == null) grid = FindObjectOfType<PuzzleGrid>();
             if (puzzleUI == null) puzzleUI = FindObjectOfType<PuzzlePhaseUI>();
 
@@ -115,6 +121,10 @@ namespace Remiehzla.Flow
 
             Context.puzzle = result;
 
+            // 存进跨场景的小黑板：探索场景要靠它拿到 solutionId
+            GameSession.Context = Context;
+            GameSession.PendingLevel = level;
+
             GameEvents.RaisePuzzleAccepted(result);
 
             Debug.Log($"[LevelDirector] 判定通过：{result}");
@@ -135,12 +145,23 @@ namespace Remiehzla.Flow
         {
             Current = Phase.Explore;
 
+            // 配了探索场景名 → 加载那个场景（拼图场景整场卸载，数据靠 GameSession 带过去）
+            if (level != null && !string.IsNullOrEmpty(level.exploreSceneName))
+            {
+                Debug.Log($"[LevelDirector] 加载探索场景：{level.exploreSceneName}");
+                GameSession.PuzzleSceneName = gameObject.scene.name;
+
+                SceneManager.LoadScene(level.exploreSceneName);
+                return;
+            }
+
+            // 旧模式：在本场景里切换根节点
             SetActive(puzzleRoot, false);
             SetActive(exploreRoot, true);
 
             GameEvents.RaiseExplorePhaseEntered(Context);
 
-            Debug.Log($"[LevelDirector] 进入探索阶段，solutionId = {Context.puzzle.solutionId}" +
+            Debug.Log($"[LevelDirector] 进入探索阶段（同场景），solutionId = {Context.puzzle.solutionId}" +
                       $"{(Context.puzzle.isHidden ? "（隐藏解）" : "")}");
         }
 

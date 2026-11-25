@@ -30,7 +30,16 @@ namespace Remiehzla.Explore
         {
             string solutionId = solutionIdOverride;
 
-            if (solutionId == null)
+            // 跨场景模式：上下文存在 GameSession 里
+            if (string.IsNullOrEmpty(solutionId))
+            {
+                LevelContext context = GameSession.Context;
+
+                if (context != null) solutionId = context.puzzle.solutionId;
+            }
+
+            // 同场景旧模式：找 LevelDirector
+            if (string.IsNullOrEmpty(solutionId))
             {
                 LevelDirector director = FindObjectOfType<LevelDirector>();
 

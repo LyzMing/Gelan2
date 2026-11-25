@@ -24,8 +24,12 @@ namespace Remiehzla.Puzzle
         public PuzzleConfig puzzle;
 
         [Header("探索阶段")]
-        [Tooltip("本关场景名（拼图与探索在同一个场景里，两个根节点互斥）")]
+        [Tooltip("拼图通过后加载的探索场景名（必须加到 Build Settings）。留空 = 在本场景里切 ExploreRoot")]
         public string exploreSceneName = "";
+
+        [Header("流程")]
+        [Tooltip("下一关的关卡资产。探索场景里走到门时，加载它的拼图场景；留空 = 没有下一关")]
+        public LevelDefinition nextLevel;
 
         [Header("收集品")]
         [Tooltip("本关可拾取物的 id，带关卡前缀，例如 L01_PHOTO")]

@@ -4,8 +4,11 @@ using Remiehzla.Flow;
 namespace Remiehzla.Explore
 {
     /// <summary>
-    /// 门：交互后通知 <see cref="LevelDirector"/> 本关结束。
-    /// 真正的转场/加载下一关由转场系统负责（它会订阅 LevelCleared 事件）。
+    /// 门：交互后结束本关。
+    ///
+    /// 两种接法都支持：
+    ///   · 探索场景里有 <see cref="ExploreSceneController"/> → 交给它（加载下一关的拼图场景）
+    ///   · 探索内容和拼图在同一个场景里（旧模式）→ 交给 LevelDirector
     /// </summary>
     public class DoorInteractable : InteractableBase
     {
@@ -19,6 +22,9 @@ namespace Remiehzla.Explore
         [Tooltip("要求拼图阶段已经通过才能进")]
         public bool requirePuzzleSolved = true;
 
+        ExploreSceneController exploreController;
+        bool searchedExploreController;
+
         public override string Prompt => string.IsNullOrEmpty(promptOverride) ? "进入" : promptOverride;
 
         public override bool CanInteract
@@ -28,10 +34,23 @@ namespace Remiehzla.Explore
                 if (!base.CanInteract) return false;
                 if (!requirePuzzleSolved) return true;
 
+                // 跨场景模式：探索场景里有控制器，说明现在本来就是探索阶段
+                if (ResolveExploreController() != null) return true;
+
                 LevelDirector target = ResolveDirector();
 
                 return target != null && target.Current == LevelDirector.Phase.Explore;
             }
+        }
+
+        ExploreSceneController ResolveExploreController()
+        {
+            if (searchedExploreController) return exploreController;
+
+            searchedExploreController = true;
+            exploreController = FindObjectOfType<ExploreSceneController>();
+
+            return exploreController;
         }
 
         LevelDirector ResolveDirector()
@@ -45,11 +64,19 @@ namespace Remiehzla.Explore
 
         protected override void OnInteract(GameObject interactor)
         {
+            ExploreSceneController controller = ResolveExploreController();
+
+            if (controller != null)
+            {
+                controller.RequestLeaveLevel();
+                return;
+            }
+
             LevelDirector target = ResolveDirector();
 
             if (target == null)
             {
-                Debug.LogWarning("[Door] 场景里没有 LevelDirector，无法过关");
+                Debug.LogWarning("[Door] 场景里既没有 ExploreSceneController 也没有 LevelDirector，无法过关");
                 return;
             }
 
