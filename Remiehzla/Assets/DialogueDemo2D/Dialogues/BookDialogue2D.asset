@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd5f07d165602a48bb8b0d1734ca775, type: 3}
+  m_Name: BookDialogue2D
+  m_EditorClassIdentifier: 
+  title: "\u5C18\u5C01\u7684\u4E66"
+  oneShot: 1
+  replayHint: 
+  lines:
+  - speaker: "\u5C18\u5C01\u7684\u4E66"
+    text: "\u6307\u5C16\u78B0\u5230\u5C01\u9762\u7684\u77AC\u95F4\uFF0C\u4E66\u9875\u81EA\u5DF1\u7FFB\u5F00\u4E86\u3002"
+    charsPerSecond: 0
+  - speaker: "\u5C18\u5C01\u7684\u4E66"
+    text: "\u5F88\u4E45\u4EE5\u524D\uFF0C\u8FD9\u91CC\u4F4F\u7740\u4E00\u4F4D\u6284\u5199\u5458\u3002\u4ED6\u628A\u6BCF\u4E2A\u8DEF\u8FC7\u8005\u7684\u68A6\uFF0C\u90FD\u4E00\u5B57\u4E00\u53E5\u8BB0\u4E86\u4E0B\u6765\u3002"
+    charsPerSecond: 0
+  - speaker: "\u65C5\u4EBA"
+    text: "\u90A3\u6211\u7684\u68A6\u2026\u2026\u4E5F\u4F1A\u88AB\u5199\u8FDB\u53BB\u5417\uFF1F"
+    charsPerSecond: 28
+  - speaker: "\u5C18\u5C01\u7684\u4E66"
+    text: "\u7FFB\u5230\u6700\u540E\u4E00\u9875\u5427\u3002\u7A7A\u767D\u7684\u90A3\u4E00\u884C\uFF0C\u6B63\u7B49\u7740\u4F60\u7684\u540D\u5B57\u3002"
+    charsPerSecond: 24
