@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd5f07d165602a48bb8b0d1734ca775, type: 3}
+  m_Name: ChestDialogue2D
+  m_EditorClassIdentifier: 
+  title: "\u98CE\u5316\u7684\u6728\u7BB1"
+  oneShot: 1
+  replayHint: 
+  lines:
+  - speaker: "\u98CE\u5316\u7684\u6728\u7BB1"
+    text: "\u5494\u54D2\u3002\u9501\u6263\u5728\u4F60\u638C\u5FC3\u4E0B\u677E\u5F00\uFF0C\u50CF\u4E00\u58F0\u5F88\u8F7B\u7684\u53F9\u606F\u3002"
+    charsPerSecond: 0
+  - speaker: "\u98CE\u5316\u7684\u6728\u7BB1"
+    text: "\u91CC\u9762\u6CA1\u6709\u91D1\u5E01\uFF0C\u53EA\u6709\u4E00\u5F20\u6298\u597D\u7684\u7EB8\u6761\u2014\u2014\u300C\u628A\u6CA1\u8BF4\u5B8C\u7684\u8BDD\uFF0C\u8BF4\u5B8C\u3002\u300D"
+    charsPerSecond: 0
+  - speaker: "\u65C5\u4EBA"
+    text: "\u2026\u2026\u8FD9\u53EF\u4E0D\u50CF\u5B9D\u85CF\u3002"
+    charsPerSecond: 30
+  - speaker: "\u98CE\u5316\u7684\u6728\u7BB1"
+    text: "\u6728\u7BB1\u5FAE\u5FAE\u9707\u52A8\uFF0C\u4EFF\u4F5B\u5728\u7B11\u3002"
+    charsPerSecond: 20
