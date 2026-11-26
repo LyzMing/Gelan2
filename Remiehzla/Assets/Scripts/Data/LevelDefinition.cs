@@ -1,4 +1,5 @@
 using UnityEngine;
+using Remiehzla.Dialogue;
 
 namespace Remiehzla.Puzzle
 {
@@ -22,6 +23,9 @@ namespace Remiehzla.Puzzle
         [Header("拼图阶段")]
         [Tooltip("留空 = 纯剧情关（最终演出关），直接跳过拼图")]
         public PuzzleConfig puzzle;
+
+        [Tooltip("进入拼图环节时自动播放的字幕。播完之前不能操作拼图。留空 = 没有开场对话")]
+        public DialogueAsset puzzleDialogue;
 
         [Header("探索阶段")]
         [Tooltip("拼图通过后加载的探索场景名（必须加到 Build Settings）。留空 = 在本场景里切 ExploreRoot")]

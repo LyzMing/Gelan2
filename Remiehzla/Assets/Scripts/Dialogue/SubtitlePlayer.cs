@@ -56,20 +56,17 @@ namespace Remiehzla.Dialogue
         public float endDelay = 0.35f;
 
         [Header("外观")]
-        public int fontSize = 30;
+        public int fontSize = 28;
         public Color textColor = Color.white;
 
         [Tooltip("字幕区域高度")]
         public float barHeight = 150f;
 
-        [Tooltip("离屏幕底边的距离")]
-        public float bottomMargin = 46f;
+        [Tooltip("离屏幕底边的距离。0 = 贴着底边")]
+        public float bottomMargin = 0f;
 
-        [Tooltip("文字描边颜色（没有背景板，靠描边保证在亮背景上也看得清）")]
-        public Color outlineColor = new Color(0f, 0f, 0f, 0.85f);
-
-        [Tooltip("描边粗细")]
-        public Vector2 outlineDistance = new Vector2(1.6f, -1.6f);
+        [Tooltip("字幕背景条颜色。alpha 设 0 就是不要背景")]
+        public Color barColor = new Color(0f, 0f, 0f, 0.66f);
 
         [Header("奖励提示")]
         public float toastSeconds = 2.2f;
@@ -322,7 +319,8 @@ namespace Remiehzla.Dialogue
             scaler.matchWidthOrHeight = 0.5f;
 
             // 底部字幕区域：只要文字，不画背景板
-            var barGo = new GameObject("SubtitleArea", typeof(Image));
+            // 底部字幕条（带背景板，策划要的可读性优先）
+            var barGo = new GameObject("SubtitleBar", typeof(Image));
             barGo.transform.SetParent(canvasGo.transform, false);
 
             var barRect = barGo.GetComponent<RectTransform>();
@@ -332,9 +330,8 @@ namespace Remiehzla.Dialogue
             barRect.sizeDelta = new Vector2(0f, barHeight);
             barRect.anchoredPosition = new Vector2(0f, bottomMargin);
 
-            // 背景图整个关掉（只用来当布局容器）
             var barImage = barGo.GetComponent<Image>();
-            barImage.enabled = false;
+            barImage.color = barColor;
             barImage.raycastTarget = false;
 
             bar = barGo;
@@ -345,14 +342,8 @@ namespace Remiehzla.Dialogue
             var textRect = subtitleText.GetComponent<RectTransform>();
             textRect.anchorMin = Vector2.zero;
             textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = new Vector2(120f, 0f);
-            textRect.offsetMax = new Vector2(-120f, 0f);
-
-            // 没有底衬，靠描边保证在亮背景上也看得清
-            var outline = subtitleText.gameObject.AddComponent<Outline>();
-            outline.effectColor = outlineColor;
-            outline.effectDistance = outlineDistance;
-            outline.useGraphicAlpha = true;
+            textRect.offsetMin = new Vector2(80f, 20f);
+            textRect.offsetMax = new Vector2(-80f, -20f);
 
             // 奖励提示（顶部居中）
             toastText = CreateText("Toast", canvasGo.transform, fontSize + 2, new Color(1f, 0.92f, 0.55f));

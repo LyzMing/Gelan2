@@ -26,6 +26,10 @@ namespace Remiehzla.EditorTools
         int selectedCell = -1;
         int solutionIndex = -1;          // -1 = 编辑初始布局
 
+        // 复制粘贴用的剪贴板（只在这个窗口里有效，关掉 Unity 就没了）
+        static CellState clipboard;
+        static bool hasClipboard;
+
         GUIStyle centerLabel;
 
         PuzzleConfig Config => level != null ? level.puzzle : null;
@@ -51,6 +55,8 @@ namespace Remiehzla.EditorTools
                 };
                 centerLabel.normal.textColor = Color.white;
             }
+
+            HandleHotkeys();
 
             EditorGUILayout.Space(6f);
 
@@ -331,6 +337,20 @@ namespace Remiehzla.EditorTools
 
             using (new EditorGUILayout.HorizontalScope())
             {
+                using (new EditorGUI.DisabledScope(selectedCell < 0))
+                {
+                    if (GUILayout.Button("复制 (Ctrl+C)")) CopySelected();
+                }
+
+                using (new EditorGUI.DisabledScope(selectedCell < 0 || !hasClipboard))
+                {
+                    if (GUILayout.Button("粘贴 (Ctrl+V)")) PasteSelected(false);
+                    if (GUILayout.Button("只粘朝向 (Ctrl+Shift+V)")) PasteSelected(true);
+                }
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
                 if (GUILayout.Button("重置为正解形态")) ResetToIdentity();
                 if (GUILayout.Button("全部摆正")) ResetOrientations();
                 if (GUILayout.Button("随机打乱位置")) RandomizePieces();
@@ -338,6 +358,8 @@ namespace Remiehzla.EditorTools
 
             EditorGUILayout.HelpBox(
                 "点一格选中，再点另一格 = 两块互换内容。\n" +
+                "「复制 / 粘贴」= 连同图块编号一起复制过去（会出现重复图块，注意 Validate 报错）。\n" +
+                "「只粘朝向」= 只复制旋转和翻转，保留目标格原来是哪一块 —— 批量摆同一种朝向时用这个。\n" +
                 "「重置为正解形态」= 每块回到自己格子且全部正立（配置正解时最常用）。\n" +
                 "改动会立即写回资产。",
                 MessageType.None);
@@ -439,6 +461,61 @@ namespace Remiehzla.EditorTools
             cells[b] = tmp;
 
             EditorUtility.SetDirty(level);
+        }
+
+        // ---------------------------------------------------------------- 复制 / 粘贴
+
+        void CopySelected()
+        {
+            CellState[] cells = GetCells();
+
+            if (cells == null || selectedCell < 0 || selectedCell >= cells.Length) return;
+
+            clipboard = cells[selectedCell];
+            hasClipboard = true;
+
+            Debug.Log($"[拼图布局] 复制格子 #{selectedCell}：图块 {clipboard.pieceIndex}、旋转 {clipboard.turnSteps}、翻转 {clipboard.flipped}");
+
+            Repaint();
+        }
+
+        /// <param name="orientationOnly">true = 只粘贴朝向（旋转/翻转），保留目标格原来的图块</param>
+        void PasteSelected(bool orientationOnly)
+        {
+            CellState[] cells = GetCells();
+
+            if (!hasClipboard || cells == null) return;
+            if (selectedCell < 0 || selectedCell >= cells.Length) return;
+
+            Mutate(selectedCell, state =>
+            {
+                state.turnSteps = clipboard.turnSteps;
+                state.flipped = clipboard.flipped;
+
+                if (!orientationOnly) state.pieceIndex = clipboard.pieceIndex;
+
+                return state;
+            }, orientationOnly ? "粘贴朝向" : "粘贴图块");
+        }
+
+        void HandleHotkeys()
+        {
+            Event e = Event.current;
+
+            if (e == null || e.type != EventType.KeyDown) return;
+            if (EditorGUIUtility.editingTextField) return;                 // 正在输入框里打字，别抢键
+            if (!e.control && !e.command) return;
+
+            if (e.keyCode == KeyCode.C)
+            {
+                CopySelected();
+                e.Use();
+            }
+            else if (e.keyCode == KeyCode.V)
+            {
+                PasteSelected(e.shift);
+                e.Use();
+            }
         }
 
         void RotateSelected(int delta)

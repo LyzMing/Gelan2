@@ -330,9 +330,31 @@ namespace Remiehzla.Puzzle
             for (int i = 0; i < tiles.Count; i++) tiles[i].TickAnimation(dt);
 
             TickShake(dt);
+
+            // 对话 / 过场期间：只播动画，不接受任何输入
+            if (!inputEnabled) return;
+
             HandleCameraInput();
             HandleInput();
             UpdateGhost(dt);
+        }
+
+        /// <summary>是否接受拼图输入。拼图环节的开场对话播放期间关掉。</summary>
+        [Tooltip("关掉后不响应任何拼图输入（开场对话播放时会自动关）")]
+        public bool inputEnabled = true;
+
+        public bool InputEnabled => inputEnabled;
+
+        /// <summary>开关拼图输入。关掉时会顺手取消选中和复制模式，避免留下半截状态。</summary>
+        public void SetInputEnabled(bool enabled)
+        {
+            inputEnabled = enabled;
+
+            if (enabled) return;
+
+            if (copyMode) CancelCopy();
+
+            Select(null);
         }
 
         void HandleInput()
@@ -527,6 +549,7 @@ namespace Remiehzla.Puzzle
 
         internal void OnTileBeginDrag(PuzzleTile tile, PointerEventData eventData)
         {
+            if (!inputEnabled) return;
             if (tile == null) return;
 
             // 复制模式 / 复制体还在飞的时候，左键是用来放下的，不响应拖拽
@@ -550,6 +573,7 @@ namespace Remiehzla.Puzzle
 
         internal void OnTileDrag(PuzzleTile tile, PointerEventData eventData)
         {
+            if (!inputEnabled) return;
             if (dragging != tile || tile == null) return;
 
             Vector2 local;
@@ -563,6 +587,8 @@ namespace Remiehzla.Puzzle
 
         internal void OnTileEndDrag(PuzzleTile tile, PointerEventData eventData)
         {
+            if (!inputEnabled) return;
+
             // 复制模式下"拖了一下再松手"也算放下（此时 uGUI 不会派发 click）
             if (copyMode)
             {
@@ -603,6 +629,7 @@ namespace Remiehzla.Puzzle
         /// <summary>点在背景上（棋盘外或格缝里）。复制模式下按"就近放下 / 放弃"处理。</summary>
         void OnBackgroundClicked()
         {
+            if (!inputEnabled) return;
             if (!copyMode) return;
 
             PlaceCopyAtCursor();
@@ -1037,6 +1064,8 @@ namespace Remiehzla.Puzzle
 
         internal void OnTileClicked(PuzzleTile tile)
         {
+            if (!inputEnabled) return;
+
             // 复制模式下左键 = 把这个复制体放下去（点哪一格由光标位置决定）
             if (copyMode)
             {

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Remiehzla.Puzzle;
 using Remiehzla.UI;
+using Remiehzla.Dialogue;
 
 namespace Remiehzla.Flow
 {
@@ -113,6 +114,38 @@ namespace Remiehzla.Flow
             GameEvents.RaisePuzzlePhaseEntered(level != null ? level.puzzle : null);
 
             Debug.Log($"[LevelDirector] 进入拼图阶段：{(level != null ? level.levelId : "（未配关卡）")}");
+
+            PlayPuzzleIntroDialogue();
+        }
+
+        /// <summary>拼图环节的开场对话：播完之前不让操作拼图。</summary>
+        void PlayPuzzleIntroDialogue()
+        {
+            if (level == null || level.puzzleDialogue == null) return;
+
+            SubtitlePlayer subtitles = SubtitlePlayer.Instance;
+
+            if (subtitles == null) return;
+
+            if (grid != null) grid.SetInputEnabled(false);
+            if (puzzleUI != null) puzzleUI.SetButtonsEnabled(false);
+
+            bool started = subtitles.Play(level.puzzleDialogue, () =>
+            {
+                if (grid != null) grid.SetInputEnabled(true);
+                if (puzzleUI != null) puzzleUI.SetButtonsEnabled(true);
+            }, lockMovement: true);
+
+            if (started)
+            {
+                Debug.Log("[LevelDirector] 播放拼图环节的开场对话，拼图暂时锁定");
+
+                return;
+            }
+
+            // 已经有别的对话在播：先别锁死，免得玩家卡住
+            if (grid != null) grid.SetInputEnabled(true);
+            if (puzzleUI != null) puzzleUI.SetButtonsEnabled(true);
         }
 
         void OnPuzzleConfirmed(PuzzleResult result)

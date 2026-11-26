@@ -24,6 +24,10 @@ namespace Remiehzla.UI
         [Header("文案")]
         [Tooltip("{0} = 关卡显示名")]
         public string titleFormat = "{0}";
+
+        [Tooltip("是否显示关卡名。功能保留，暂时隐藏")]
+        public bool showTitle;
+
         public string stepFormat = "步数：{0}";
         public string confirmLabel = "确定";
         public string shuffleLabel = "重新打乱";
@@ -125,6 +129,9 @@ namespace Remiehzla.UI
         {
             if (grid == null) return;
 
+            // 开场对话还没播完：不让判定
+            if (!grid.InputEnabled) return;
+
             PuzzleResult result;
 
             if (grid.Confirm(out result))
@@ -143,9 +150,17 @@ namespace Remiehzla.UI
         public void OnShuffle()
         {
             if (grid == null) return;
+            if (!grid.InputEnabled) return;
 
             grid.Shuffle();
             RefreshStaticTexts();
+        }
+
+        /// <summary>开关按钮可点状态（开场对话期间关掉）。</summary>
+        public void SetButtonsEnabled(bool enabled)
+        {
+            if (confirmButton != null) confirmButton.interactable = enabled;
+            if (shuffleButton != null) shuffleButton.interactable = enabled;
         }
 
         public void ShowToast(string message, Color color)
@@ -175,17 +190,18 @@ namespace Remiehzla.UI
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
 
-            // ---- 标题（顶部居中）----
+            // ---- 标题（顶部居中，默认隐藏）----
             titleText = CreateText("Title", canvasGo.transform, titleFontSize, TextAnchor.MiddleCenter, textColor);
             Place(titleText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -18f), new Vector2(900f, 44f));
+            titleText.gameObject.SetActive(showTitle);
 
             // ---- 步数（右上）----
             stepText = CreateText("Step", canvasGo.transform, bodyFontSize, TextAnchor.MiddleRight, hintColor);
             Place(stepText.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-28f, -24f), new Vector2(260f, 32f));
 
-            // ---- 操作提示（底部居中）----
+            // ---- 操作提示（顶部居中）----
             hintText = CreateText("Hint", canvasGo.transform, bodyFontSize, TextAnchor.MiddleCenter, hintColor);
-            Place(hintText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 104f), new Vector2(1240f, 32f));
+            Place(hintText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(1100f, 32f));
 
             // ---- 确定按钮（右下）----
             confirmButton = CreateButton("ConfirmButton", confirmLabel, new Vector2(1f, 0f), new Vector2(1f, 0f),

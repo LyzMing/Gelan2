@@ -10,40 +10,40 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c127cac241f635748a961bc1510aaa33, type: 3}
-  m_Name: L00_NewLevel 2
+  m_Name: L01
   m_EditorClassIdentifier: 
-  levelId: L02_SCHOOL
-  displayName: "\u5B66\u6821"
+  levelId: L01_HOME
+  displayName: "\u5BB6"
   puzzle:
-    image: {fileID: 2800000, guid: c8270ce6c2b0f2f46aacc7c6c1049107, type: 3}
+    image: {fileID: 2800000, guid: abbc78a2655d28842b6b978af8d6c6ac, type: 3}
     gridSize: 3
     initial:
       cells:
       - pieceIndex: 8
         turnSteps: 0
         flipped: 0
-      - pieceIndex: 1
+      - pieceIndex: 7
         turnSteps: 0
         flipped: 0
       - pieceIndex: 6
         turnSteps: 0
         flipped: 0
-      - pieceIndex: 3
-        turnSteps: 0
-        flipped: 0
-      - pieceIndex: 0
-        turnSteps: 0
-        flipped: 0
       - pieceIndex: 5
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 4
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 3
         turnSteps: 0
         flipped: 0
       - pieceIndex: 2
         turnSteps: 0
         flipped: 0
-      - pieceIndex: 7
+      - pieceIndex: 1
         turnSteps: 0
         flipped: 0
-      - pieceIndex: 4
+      - pieceIndex: 0
         turnSteps: 0
         flipped: 0
     solutions:
@@ -77,10 +77,12 @@ MonoBehaviour:
       - pieceIndex: 8
         turnSteps: 0
         flipped: 0
-    allowedOps: 71
+    allowedOps: 67
     countRotateAsStep: 0
     moveLimit: 0
     allowShuffleInGame: 0
-  exploreSceneName: L02_Explore
-  nextLevel: {fileID: 0}
-  collectibles: []
+  puzzleDialogue: {fileID: 11400000, guid: a810858e9d4985d46a77f4afe0c77687, type: 2}
+  exploreSceneName: L01_Explore
+  nextLevel: {fileID: 11400000, guid: c269591df6a17914297047708c85be67, type: 2}
+  collectibles:
+  - L01_PHOTO
