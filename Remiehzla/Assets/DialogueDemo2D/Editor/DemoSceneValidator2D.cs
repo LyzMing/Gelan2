@@ -167,8 +167,19 @@ namespace DialogueDemo.EditorTools
             var hallPlayer = GameObject.FindGameObjectWithTag("Player");
             Check("大厅场景有 Player", hallPlayer != null);
             Check("大厅场景有正交相机", Camera.main != null && Camera.main.orthographic);
-            Check("大厅场景有 Global Light 2D",
-                Object.FindObjectOfType<Light2D>() != null);
+            // Light2D 属于 URP；本项目没装 URP 包，直接引用会在编译期就失败。
+            // 用反射查类型，装了 URP 就照常检查，没装就跳过。
+            var light2DType = System.Type.GetType(
+                "UnityEngine.Rendering.Universal.Light2D, Unity.RenderPipelines.Universal.Runtime");
+
+            if (light2DType == null)
+            {
+                Debug.LogWarning("[校验] 项目没装 URP，跳过「Global Light 2D」检查");
+            }
+            else
+            {
+                Check("大厅场景有 Global Light 2D", Object.FindObjectOfType(light2DType) != null);
+            }
 
             var hallPortals = Object.FindObjectsOfType<ScenePortal2D>();
             bool hallPortalToMain = false;

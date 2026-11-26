@@ -184,7 +184,7 @@ namespace Remiehzla.Flow
                 Debug.Log($"[LevelDirector] 加载探索场景：{level.exploreSceneName}");
                 GameSession.PuzzleSceneName = gameObject.scene.name;
 
-                SceneManager.LoadScene(level.exploreSceneName);
+                SceneFlow.Load(level.exploreSceneName);
                 return;
             }
 

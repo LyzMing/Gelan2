@@ -105,7 +105,10 @@ namespace DialogueDemo.EditorTools
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            BuildLighting();
+            // 注意：BuildLighting() 的方法体在 A26 提交里被删掉了，但调用点还留着 → 编译不过。
+            // 另外项目没装 URP（Packages/manifest.json 里没有 render-pipelines.universal），
+            // Light2D 本来也用不了，所以这里先去掉；以后接 URP 再把光照补回来。
+            // BuildLighting();
             BuildCamera();
             BuildHallRoom();
             BuildPlayer();

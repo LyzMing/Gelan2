@@ -82,7 +82,7 @@ namespace Remiehzla.Flow
 
             Debug.Log($"[Explore] 本关结束 → 下一关 {level.nextLevel.levelId}，加载拼图场景 {target}");
 
-            SceneManager.LoadScene(target);
+            SceneFlow.Load(target);
         }
     }
 }
