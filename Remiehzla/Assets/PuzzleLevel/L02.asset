@@ -83,5 +83,5 @@ MonoBehaviour:
     allowShuffleInGame: 0
   puzzleDialogue: {fileID: 11400000, guid: 4f662cd28afceeb448446962ac4af61d, type: 2}
   exploreSceneName: L02_Explore
-  nextLevel: {fileID: 0}
+  nextLevel: {fileID: 11400000, guid: aee4e9c93d5c1284bb727d9e02fd0707, type: 2}
   collectibles: []

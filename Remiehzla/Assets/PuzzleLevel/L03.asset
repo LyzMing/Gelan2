@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c127cac241f635748a961bc1510aaa33, type: 3}
+  m_Name: L03
+  m_EditorClassIdentifier: 
+  levelId: L03_PARK
+  displayName: "\u516C\u56ED"
+  puzzle:
+    image: {fileID: 2800000, guid: 3c2cf1cc3a6011646abde0517ccea5aa, type: 3}
+    gridSize: 3
+    initial:
+      cells:
+      - pieceIndex: 1
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 5
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 4
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 2
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 0
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 8
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 7
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 3
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 6
+        turnSteps: 0
+        flipped: 0
+    solutions:
+    - solutionId: normal
+      isHidden: 0
+      cells:
+      - pieceIndex: 0
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 1
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 2
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 3
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 4
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 5
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 6
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 7
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 8
+        turnSteps: 0
+        flipped: 0
+    allowedOps: 87
+    countRotateAsStep: 0
+    moveLimit: 0
+    allowShuffleInGame: 0
+  puzzleDialogue: {fileID: 11400000, guid: 19566e97dc74af542ac70c798ad1d7ef, type: 2}
+  exploreSceneName: L03_Explore
+  nextLevel: {fileID: 0}
+  collectibles: []

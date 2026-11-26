@@ -17,4 +17,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/L02_Explore.unity
     guid: 32c412b8f88750f4a87e5eee7ae4e8f2
+  - enabled: 1
+    path: Assets/Scenes/L03_Explore.unity
+    guid: 72246b6f9a4800040824707afa0f8943
   m_configObjects: {}
