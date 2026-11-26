@@ -34,6 +34,12 @@ namespace DialogueDemo.EditorTools
                 return;
             }
 
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(DemoSceneBuilder2D.HallScenePath) == null)
+            {
+                Debug.LogError("[DialogueDemo2D][VALIDATION] FAIL：大厅场景不存在 " + DemoSceneBuilder2D.HallScenePath);
+                return;
+            }
+
             EditorSceneManager.OpenScene(DemoSceneBuilder2D.ScenePath, OpenSceneMode.Single);
 
             var report = new StringBuilder();
@@ -130,6 +136,25 @@ namespace DialogueDemo.EditorTools
             var walls = GameObject.Find("Room/WallTop");
             Check("房间墙壁带碰撞体", walls != null && walls.GetComponent<BoxCollider2D>() != null);
 
+            var portals = Object.FindObjectsOfType<ScenePortal2D>();
+            Check("主场景有传送门", portals.Length >= 1);
+            bool mainPortalToHall = false;
+            foreach (var portal in portals)
+            {
+                if (portal.TargetScene == DemoSceneBuilder2D.HallSceneName) mainPortalToHall = true;
+            }
+            Check("主场景传送门指向大厅", mainPortalToHall);
+
+            bool mainInBuildSettings = false;
+            bool hallInBuildSettings = false;
+            foreach (var scene in EditorBuildSettings.scenes)
+            {
+                if (scene.path == DemoSceneBuilder2D.ScenePath) mainInBuildSettings = true;
+                if (scene.path == DemoSceneBuilder2D.HallScenePath) hallInBuildSettings = true;
+            }
+            Check("主场景已在 Build Settings", mainInBuildSettings);
+            Check("大厅场景已在 Build Settings", hallInBuildSettings);
+
             // 审计：确认场景中没有任何 3D 内容
             Check("场景没有 3D 网格渲染器", Object.FindObjectsOfType<MeshRenderer>().Length == 0);
             Check("场景没有 MeshFilter", Object.FindObjectsOfType<MeshFilter>().Length == 0);
@@ -146,6 +171,24 @@ namespace DialogueDemo.EditorTools
                 if (!cam.orthographic) allCamerasOrthographic = false;
             }
             Check("所有相机均为正交投影", allCamerasOrthographic);
+
+            EditorSceneManager.OpenScene(DemoSceneBuilder2D.HallScenePath, OpenSceneMode.Single);
+
+            var hallPlayer = GameObject.FindGameObjectWithTag("Player");
+            Check("大厅场景有 Player", hallPlayer != null);
+            Check("大厅场景有正交相机", Camera.main != null && Camera.main.orthographic);
+            Check("大厅场景有 Global Light 2D",
+                Object.FindObjectOfType<Light2D>() != null);
+
+            var hallPortals = Object.FindObjectsOfType<ScenePortal2D>();
+            bool hallPortalToMain = false;
+            foreach (var portal in hallPortals)
+            {
+                if (portal.TargetScene == DemoSceneBuilder2D.MainSceneName) hallPortalToMain = true;
+            }
+            Check("大厅传送门指回主场景", hallPortalToMain);
+            Check("大厅没有 3D 网格渲染器", Object.FindObjectsOfType<MeshRenderer>().Length == 0);
+            Check("大厅没有 3D 碰撞体", Object.FindObjectsOfType<Collider>().Length == 0);
 
             Debug.Log("[DialogueDemo2D][VALIDATION]\n" + report);
             if (failures == 0)

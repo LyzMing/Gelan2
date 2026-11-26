@@ -20,7 +20,10 @@ namespace DialogueDemo.EditorTools
     public static class DemoSceneBuilder2D
     {
         public const string RootFolder = "Assets/DialogueDemo2D";
-        public const string ScenePath = RootFolder + "/Scenes/DialogueDemo2D.unity";
+        public const string MainSceneName = "DialogueDemo2D";
+        public const string ScenePath = RootFolder + "/Scenes/" + MainSceneName + ".unity";
+        public const string HallSceneName = "DialogueDemo2D_Hall";
+        public const string HallScenePath = RootFolder + "/Scenes/" + HallSceneName + ".unity";
 
         const string DialogueFolder = RootFolder + "/Dialogues";
         const string TextureFolder = RootFolder + "/Art";
@@ -38,7 +41,8 @@ namespace DialogueDemo.EditorTools
             Build();
             EditorUtility.DisplayDialog(
                 "2D 对话演示",
-                "场景已生成：\n" + ScenePath + "\n\n按 Play 试玩：WASD 移动，走近物品即开始对话。",
+                "场景已生成：\n" + ScenePath + "\n" + HallScenePath +
+                "\n\n按 Play 试玩：WASD 移动，走近物品触发对话，走进传送门切换场景。",
                 "好");
         }
 
@@ -68,25 +72,60 @@ namespace DialogueDemo.EditorTools
                 new DialogueLine("风化的木箱", "木箱微微震动，仿佛在笑。", 20f),
             });
 
+            BuildMainScene(bookDialogue, chestDialogue);
+            BuildHallScene();
+            AddScenesToBuildSettings();
+
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[DialogueDemo2D] 演示场景已生成：" + ScenePath + " / " + HallScenePath);
+        }
+
+        static void BuildMainScene(DialogueData bookDialogue, DialogueData chestDialogue)
+        {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             BuildLighting();
             BuildCamera();
             BuildRoom();
-            GameObject player = BuildPlayer();
+            BuildPlayer();
             BuildItems(bookDialogue, chestDialogue);
-            BuildUI(out DialogueUI dialogueUI);
 
+            var portals = new GameObject("Portals").transform;
+            BuildPortal(portals, "Portal_ToHall", HallSceneName, new Vector2(7.4f, -3.4f),
+                new Color(0.4f, 0.9f, 1f), new Color(0.9f, 1f, 1f));
+
+            BuildUI(out DialogueUI dialogueUI);
             var managerObject = new GameObject("DialogueSystem");
             var manager = managerObject.AddComponent<DialogueManager>();
             manager.Configure(dialogueUI);
 
-            EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene, ScenePath);
-            AddSceneToBuildSettings();
-            AssetDatabase.SaveAssets();
+            SaveScene(scene, ScenePath);
+        }
 
-            Debug.Log("[DialogueDemo2D] 2D 演示场景已生成：" + ScenePath);
+        static void BuildHallScene()
+        {
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            BuildLighting();
+            BuildCamera();
+            BuildHallRoom();
+            BuildPlayer();
+
+            var portals = new GameObject("Portals").transform;
+            BuildPortal(portals, "Portal_ToMain", MainSceneName, new Vector2(0f, 3f),
+                new Color(1f, 0.8f, 0.4f), new Color(1f, 0.95f, 0.7f));
+
+            BuildTipUI("走近传送门，返回书房");
+
+            SaveScene(scene, HallScenePath);
+            Debug.Log("[DialogueDemo2D] 场景切换大厅已生成：" + HallScenePath);
+        }
+
+        static void SaveScene(Scene scene, string path)
+        {
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, path);
         }
 
         // ------------------------------------------------------------------
@@ -189,6 +228,91 @@ namespace DialogueDemo.EditorTools
                 center, new Vector3(size.x, size.y, 1f), parent);
             var collider = wall.AddComponent<BoxCollider2D>();
             collider.size = Vector2.one;
+        }
+
+        static void BuildPortal(Transform parent, string name, string targetScene, Vector2 position,
+            Color idleGlow, Color hotGlow)
+        {
+            var root = new GameObject(name);
+            root.transform.SetParent(parent, false);
+            root.transform.position = new Vector3(position.x, position.y, 0f);
+
+            var trigger = root.AddComponent<CircleCollider2D>();
+            trigger.isTrigger = true;
+            trigger.radius = 0.9f;
+            trigger.offset = new Vector2(0f, 0.7f);
+
+            var glow = CreateSprite("Glow", LoadSprite("Glow"), 12,
+                new Color(idleGlow.r, idleGlow.g, idleGlow.b, 0.32f),
+                Vector3.zero, new Vector3(3.2f, 3.2f, 1f), root.transform, GetSpriteUnlitMaterial());
+            glow.transform.localPosition = new Vector3(0f, 0.7f, 0f);
+
+            var door = CreateSprite("Door", LoadSprite("Door"), 15, Color.white,
+                Vector3.zero, new Vector3(1.4f, 1.4f, 1f), root.transform);
+            door.transform.localPosition = new Vector3(0f, 0.7f, 0f);
+
+            var portal = root.AddComponent<ScenePortal2D>();
+            portal.Configure(targetScene, glow.GetComponent<SpriteRenderer>(), idleGlow, hotGlow);
+        }
+
+        static void BuildHallRoom()
+        {
+            var room = new GameObject("Room").transform;
+            Sprite square = LoadSprite("Square");
+
+            CreateSprite("Background", LoadSprite("Background"), -100, Color.white,
+                Vector3.zero, new Vector3(13f, 8f, 1f), room, GetSpriteUnlitMaterial());
+
+            var ground = CreateSprite("Ground", LoadSprite("GroundTile"), -90, new Color(0.72f, 0.85f, 1f),
+                Vector3.zero, Vector3.one, room);
+            var groundRenderer = ground.GetComponent<SpriteRenderer>();
+            groundRenderer.drawMode = SpriteDrawMode.Tiled;
+            groundRenderer.size = new Vector2(20f, 11f);
+
+            CreateSprite("RugBorder", square, -87, new Color(0.1f, 0.16f, 0.22f, 0.9f),
+                new Vector3(0f, 1.2f, 0f), new Vector3(7.4f, 3.4f, 1f), room);
+            CreateSprite("Rug", square, -86, new Color(0.15f, 0.32f, 0.4f, 0.85f),
+                new Vector3(0f, 1.2f, 0f), new Vector3(7f, 3f, 1f), room);
+
+            CreateWall(room, "WallTop", new Vector2(0f, 5.7f), new Vector2(20.8f, 0.6f));
+            CreateWall(room, "WallBottom", new Vector2(0f, -5.7f), new Vector2(20.8f, 0.6f));
+            CreateWall(room, "WallLeft", new Vector2(-10.2f, 0f), new Vector2(0.6f, 12f));
+            CreateWall(room, "WallRight", new Vector2(10.2f, 0f), new Vector2(0.6f, 12f));
+
+            Vector2[] pillarPositions =
+            {
+                new Vector2(-6.5f, 2.6f), new Vector2(6.5f, 2.6f),
+                new Vector2(-6.5f, -1.6f), new Vector2(6.5f, -1.6f),
+            };
+            for (int i = 0; i < pillarPositions.Length; i++)
+            {
+                CreateSprite("Pillar" + i, square, -42, new Color(0.2f, 0.28f, 0.38f),
+                    pillarPositions[i], new Vector3(1.2f, 3.4f, 1f), room);
+                CreateSprite("PillarCap" + i, square, -41, new Color(0.3f, 0.42f, 0.55f),
+                    pillarPositions[i] + new Vector2(0f, 1.6f), new Vector3(1.4f, 0.18f, 1f), room);
+            }
+
+            CreateSprite("HallLine", square, -40, new Color(0.18f, 0.25f, 0.34f),
+                new Vector3(0f, -1.6f, 0f), new Vector3(12f, 0.12f, 1f), room);
+        }
+
+        static void BuildTipUI(string tip)
+        {
+            var canvasObject = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+            var scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            canvasObject.AddComponent<CjkTextBootstrap>();
+
+            CreateText("ControlsTip", canvasObject.transform, tip, 26,
+                new Color(0.8f, 0.85f, 0.95f, 0.85f), TextAnchor.UpperLeft,
+                new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(40f, -96f), new Vector2(1200f, -50f));
         }
 
         static GameObject BuildPlayer()
@@ -296,10 +420,10 @@ namespace DialogueDemo.EditorTools
 
             new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
 
-            CreateText("ControlsTip", canvasObject.transform, "WASD 移动　·　走近物品触发对话", 26,
+            CreateText("ControlsTip", canvasObject.transform, "WASD 移动　·　物品对话　·　右侧传送门切换场景", 26,
                 new Color(0.8f, 0.85f, 0.95f, 0.85f), TextAnchor.UpperLeft,
                 new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(40f, -96f), new Vector2(900f, -50f));
+                new Vector2(40f, -96f), new Vector2(1200f, -50f));
 
             var panel = new GameObject("DialoguePanel", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
             panel.transform.SetParent(canvasObject.transform, false);
@@ -393,6 +517,7 @@ namespace DialogueDemo.EditorTools
             PaintTexture("Player", 128, 128, PaintPlayer, false);
             PaintTexture("Book", 96, 112, PaintBook, false);
             PaintTexture("Chest", 112, 96, PaintChest, false);
+            PaintTexture("Door", 96, 128, PaintDoor, false);
             PaintTexture("Glow", 128, 128, PaintGlow, false);
             PaintTexture("Square", 128, 128, (x, y) => Color.white, false);
             PaintTexture("GroundTile", 128, 128, PaintGroundTile, true);
@@ -609,6 +734,33 @@ namespace DialogueDemo.EditorTools
             return color;
         }
 
+        static Color PaintDoor(float x, float y)
+        {
+            float px = x - 48f;
+            float py = y - 64f;
+            Color color = Color.clear;
+
+            float frame = RoundedRectSdf(px, py, 40f, 58f, 12f);
+            color = Over(color, new Color(0.05f, 0.08f, 0.14f, Coverage(frame)));
+            if (frame < -2f) color = Over(color, new Color(0.1f, 0.16f, 0.26f, 1f));
+
+            float inner = RoundedRectSdf(px, py, 29f, 46f, 10f);
+            if (inner < 0.5f)
+            {
+                float t = Mathf.Clamp01((py + 46f) / 92f);
+                Color glow = Color.Lerp(new Color(0.2f, 0.8f, 1f), new Color(0.6f, 1f, 0.95f), t);
+                color = Over(color, new Color(glow.r, glow.g, glow.b, 0.85f * Coverage(inner)));
+            }
+
+            float baseStep = RoundedRectSdf(px, py + 55f, 44f, 5f, 3f);
+            if (baseStep < 0.5f)
+            {
+                color = Over(color, new Color(0.06f, 0.1f, 0.16f, Coverage(baseStep)));
+            }
+
+            return color;
+        }
+
         static Color PaintGlow(float x, float y)
         {
             float dx = x - 64f;
@@ -682,17 +834,23 @@ namespace DialogueDemo.EditorTools
             return material;
         }
 
-        static void AddSceneToBuildSettings()
+        static void AddScenesToBuildSettings()
         {
-            // 只在缺失时追加，避免把工程接入别人的项目时清空已有 Build Settings
+            // 只追加缺失的场景，避免把工程接入别人的项目时清空已有 Build Settings
             var scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+            AddSceneIfMissing(scenes, ScenePath);
+            AddSceneIfMissing(scenes, HallScenePath);
+            EditorBuildSettings.scenes = scenes.ToArray();
+        }
+
+        static void AddSceneIfMissing(List<EditorBuildSettingsScene> scenes, string path)
+        {
             foreach (var scene in scenes)
             {
-                if (scene.path == ScenePath) return;
+                if (scene.path == path) return;
             }
 
-            scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
-            EditorBuildSettings.scenes = scenes.ToArray();
+            scenes.Add(new EditorBuildSettingsScene(path, true));
         }
 
         static void EnsureFolder(string path)

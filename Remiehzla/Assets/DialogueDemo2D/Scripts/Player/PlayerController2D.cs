@@ -35,7 +35,10 @@ namespace DialogueDemo
 
         void Update()
         {
-            bool locked = !InputEnabled ||
+            bool transitioning = SceneTransitionManager.Instance != null &&
+                                 SceneTransitionManager.Instance.IsTransitioning;
+
+            bool locked = !InputEnabled || transitioning ||
                           (DialogueManager.Instance != null && DialogueManager.Instance.IsDialogueActive);
 
             if (locked)
