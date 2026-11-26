@@ -39,7 +39,12 @@ namespace Remiehzla.Dialogue
                 return;
             }
 
-            if (SubtitlePlayer.Instance.Play(dialogue, null, lockMovement)) played = true;
+            System.Action onComplete = null;
+
+            if (dialogue.goToNextLevelWhenFinished)
+                onComplete = ExploreSceneController.LeaveCurrentScene;
+
+            if (SubtitlePlayer.Instance.Play(dialogue, onComplete, lockMovement)) played = true;
         }
     }
 }

@@ -178,13 +178,19 @@ namespace Remiehzla.Flow
         {
             Current = Phase.Explore;
 
+            // 不同解法可以跳到不同的探索场景（隐藏解专用场景）
+            string exploreScene = level != null
+                ? level.ResolveExploreScene(Context != null ? Context.puzzle.solutionId : null)
+                : null;
+
             // 配了探索场景名 → 加载那个场景（拼图场景整场卸载，数据靠 GameSession 带过去）
-            if (level != null && !string.IsNullOrEmpty(level.exploreSceneName))
+            if (!string.IsNullOrEmpty(exploreScene))
             {
-                Debug.Log($"[LevelDirector] 加载探索场景：{level.exploreSceneName}");
+                Debug.Log($"[LevelDirector] 解法「{Context.puzzle.solutionId}」→ 加载探索场景：{exploreScene}");
+
                 GameSession.PuzzleSceneName = gameObject.scene.name;
 
-                SceneFlow.Load(level.exploreSceneName);
+                SceneFlow.Load(exploreScene);
                 return;
             }
 

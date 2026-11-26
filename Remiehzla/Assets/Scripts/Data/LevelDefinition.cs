@@ -39,6 +39,29 @@ namespace Remiehzla.Puzzle
         [Tooltip("本关可拾取物的 id，带关卡前缀，例如 L01_PHOTO")]
         public string[] collectibles = new string[0];
 
+        /// <summary>
+        /// 根据拼图判定出来的解，决定进哪个探索场景。
+        /// 解上配了 exploreSceneName 就用它（隐藏解可以跳到另一个场景），否则用关卡默认的。
+        /// </summary>
+        public string ResolveExploreScene(string solutionId)
+        {
+            if (puzzle != null && puzzle.solutions != null && !string.IsNullOrEmpty(solutionId))
+            {
+                for (int i = 0; i < puzzle.solutions.Length; i++)
+                {
+                    PuzzleSolution solution = puzzle.solutions[i];
+
+                    if (solution == null) continue;
+                    if (solution.solutionId != solutionId) continue;
+                    if (string.IsNullOrEmpty(solution.exploreSceneName)) continue;
+
+                    return solution.exploreSceneName;
+                }
+            }
+
+            return exploreSceneName;
+        }
+
         // 对话字段等对方确认 DialogueAsset 类型后再加（M2）
     }
 

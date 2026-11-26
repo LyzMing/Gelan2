@@ -149,6 +149,20 @@ namespace Remiehzla.Dialogue
             Finish();
         }
 
+        /// <summary>弹一条提示（不影响对话播放）。条件不满足之类的提示走这里。</summary>
+        public void Toast(string message)
+        {
+            ShowToast(message);
+        }
+
+        /// <summary>从任何地方弹一条提示（会自动获取播放器）。</summary>
+        public static void ShowHint(string message)
+        {
+            SubtitlePlayer player = Instance;
+
+            if (player != null) player.ShowToast(message);
+        }
+
         // ------------------------------------------------------------------ 播放
 
         IEnumerator Run(DialogueAsset dialogue)

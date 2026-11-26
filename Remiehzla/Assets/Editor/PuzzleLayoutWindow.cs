@@ -196,6 +196,22 @@ namespace Remiehzla.EditorTools
                         EditorUtility.SetDirty(level);
                     }
                 }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUI.BeginChangeCheck();
+
+                    string scene = EditorGUILayout.TextField(
+                        new GUIContent("探索场景", "这个解对应哪个探索场景。留空 = 用关卡的默认探索场景。隐藏解可以在这里指到专属场景"),
+                        editing.exploreSceneName, GUILayout.Width(380f));
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(level, "修改正解的探索场景");
+                        editing.exploreSceneName = scene;
+                        EditorUtility.SetDirty(level);
+                    }
+                }
             }
         }
 

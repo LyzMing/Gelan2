@@ -34,3 +34,4 @@ MonoBehaviour:
     holdAfter: 0
   rewardItemId: L03_FLOWER
   rewardLabel: "\u9C9C\u82B1"
+  goToNextLevelWhenFinished: 0

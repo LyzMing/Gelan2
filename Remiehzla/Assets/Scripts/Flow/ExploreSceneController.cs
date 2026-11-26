@@ -51,6 +51,23 @@ namespace Remiehzla.Flow
             return level != null ? $"{level.levelId}（{level.name}）" : "（未配关卡）";
         }
 
+        /// <summary>
+        /// 从任何地方结束本关（对话播完自动过关用）。
+        /// 场景里没有控制器就什么都不做，只打一条警告。
+        /// </summary>
+        public static void LeaveCurrentScene()
+        {
+            var controller = FindObjectOfType<ExploreSceneController>();
+
+            if (controller == null)
+            {
+                Debug.LogWarning("[Explore] 想结束本关，但当前场景没有 ExploreSceneController");
+                return;
+            }
+
+            controller.RequestLeaveLevel();
+        }
+
         /// <summary>门交互时调用：结束本关，加载下一关的拼图场景。</summary>
         public void RequestLeaveLevel()
         {

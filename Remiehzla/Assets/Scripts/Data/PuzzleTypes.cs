@@ -117,6 +117,9 @@ namespace Remiehzla.Puzzle
         [Tooltip("隐藏解：不参与常规通关，用于解锁隐藏内容")]
         public bool isHidden;
 
+        [Tooltip("这个解对应的探索场景名。留空 = 用关卡的默认探索场景")]
+        public string exploreSceneName = "";
+
         public CellState[] cells = new CellState[0];
 
         public PuzzleSolution() { }

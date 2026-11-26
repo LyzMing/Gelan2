@@ -334,6 +334,8 @@ MonoBehaviour:
   promptOverride: "\u5F00\u95E8"
   highlightTarget: {fileID: 0}
   startDisabled: 0
+  requiredItemId: 
+  conditionLockedHint: "\u6682\u672A\u6EE1\u8DB3\u6761\u4EF6"
   director: {fileID: 0}
   targetSceneName: 
   requirePuzzleSolved: 1
@@ -451,6 +453,7 @@ MonoBehaviour:
   dialogue: {fileID: 11400000, guid: adf94e76a8f3faa43a49c92725c5a07c, type: 2}
   oneShot: 1
   lockMovement: 0
+  requiredItemId: 
   size: {x: 2, y: 2}
 --- !u!1 &1001367467
 GameObject:
@@ -501,6 +504,8 @@ MonoBehaviour:
   promptOverride: "\u67E5\u770B"
   highlightTarget: {fileID: 0}
   startDisabled: 0
+  requiredItemId: L01_PHOTO
+  conditionLockedHint: "\u6682\u672A\u6EE1\u8DB3\u6761\u4EF6"
   dialogue: {fileID: 11400000, guid: 8cb2ea73df8786642b83dad770e4d391, type: 2}
   oneShot: 1
   lockMovement: 1
@@ -10030,11 +10035,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5401648998673451467, guid: b8183bf1bd07239439335a2e535d245a, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 0.02
       objectReference: {fileID: 0}
     - target: {fileID: 5401648998673451467, guid: b8183bf1bd07239439335a2e535d245a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 2.17
       objectReference: {fileID: 0}
     - target: {fileID: 5401648998673451467, guid: b8183bf1bd07239439335a2e535d245a, type: 3}
       propertyPath: m_LocalPosition.z

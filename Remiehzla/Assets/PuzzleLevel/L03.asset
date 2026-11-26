@@ -19,36 +19,37 @@ MonoBehaviour:
     gridSize: 3
     initial:
       cells:
-      - pieceIndex: 1
-        turnSteps: 0
-        flipped: 0
-      - pieceIndex: 5
-        turnSteps: 0
-        flipped: 0
-      - pieceIndex: 4
-        turnSteps: 0
-        flipped: 0
       - pieceIndex: 2
         turnSteps: 0
         flipped: 0
       - pieceIndex: 0
         turnSteps: 0
         flipped: 0
-      - pieceIndex: 8
+      - pieceIndex: 7
         turnSteps: 0
         flipped: 0
-      - pieceIndex: 7
+      - pieceIndex: 1
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 8
         turnSteps: 0
         flipped: 0
       - pieceIndex: 3
         turnSteps: 0
         flipped: 0
+      - pieceIndex: 5
+        turnSteps: 0
+        flipped: 0
       - pieceIndex: 6
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 4
         turnSteps: 0
         flipped: 0
     solutions:
     - solutionId: normal
       isHidden: 0
+      exploreSceneName: 
       cells:
       - pieceIndex: 0
         turnSteps: 0

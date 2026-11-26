@@ -1,5 +1,6 @@
 using UnityEngine;
 using Remiehzla.Explore;
+using Remiehzla.Flow;
 
 namespace Remiehzla.Dialogue
 {
@@ -23,6 +24,10 @@ namespace Remiehzla.Dialogue
         [Tooltip("进入时是否锁住玩家移动。区域触发一般不需要")]
         public bool lockMovement;
 
+        [Header("条件")]
+        [Tooltip("需要先拿到这个物品 id 才能触发。留空 = 无条件")]
+        public string requiredItemId;
+
         [Header("触发范围")]
         [Tooltip("没有 BoxCollider2D 时用这个尺寸（世界单位，以本物体为中心）")]
         public Vector2 size = new Vector2(2f, 2f);
@@ -32,6 +37,10 @@ namespace Remiehzla.Dialogue
         float nextPlayerSearch;
         bool inside;
         bool played;
+
+        /// <summary>条件是否满足。</summary>
+        bool ConditionMet =>
+            string.IsNullOrEmpty(requiredItemId) || ProgressService.HasCollected(requiredItemId);
 
         void Awake()
         {
@@ -55,6 +64,9 @@ namespace Remiehzla.Dialogue
 
             if (!entered) return;
 
+            // 条件不满足：静默跳过，不算触发过。拿到物品后重新走进来才会触发。
+            if (!ConditionMet) return;
+
             // 别的对话正在播 → 这次不触发（也不算触发过，出去再进来可以补上）
             if (SubtitlePlayer.IsAnyPlaying) return;
 
@@ -69,7 +81,12 @@ namespace Remiehzla.Dialogue
                 return;
             }
 
-            if (!SubtitlePlayer.Instance.Play(dialogue, null, lockMovement)) return;
+            System.Action onComplete = null;
+
+            if (dialogue.goToNextLevelWhenFinished)
+                onComplete = ExploreSceneController.LeaveCurrentScene;
+
+            if (!SubtitlePlayer.Instance.Play(dialogue, onComplete, lockMovement)) return;
 
             played = true;
 

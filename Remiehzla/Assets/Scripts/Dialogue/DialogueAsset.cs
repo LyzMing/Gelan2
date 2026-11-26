@@ -40,6 +40,10 @@ namespace Remiehzla.Dialogue
         [Tooltip("提示里显示的名字，例如「老照片」。留空则显示 id")]
         public string rewardLabel = "";
 
+        [Header("播放完之后")]
+        [Tooltip("播完自动进入下一关（和走到门一样）。用于「看完这段就换场景」的剧情节点")]
+        public bool goToNextLevelWhenFinished;
+
         public bool IsValid => lines != null && lines.Length > 0;
 
         public bool HasReward => !string.IsNullOrEmpty(rewardItemId);
