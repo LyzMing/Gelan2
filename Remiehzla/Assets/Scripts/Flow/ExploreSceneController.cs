@@ -29,16 +29,26 @@ namespace Remiehzla.Flow
 
         void Start()
         {
+            // 没有拼图阶段传过来的数据 = 直接在这个场景按了 Play（单独调试）
+            bool standalone = GameSession.Context == null;
+
             Context = GameSession.EnsureContext(level);
 
-            if (level == null) level = Context.level;
+            // 从拼图场景过来时，以拼图阶段带过来的那一关为准（Inspector 上的只在单独调试时用）
+            if (Context.level != null) level = Context.level;
 
             string solutionId = Context.puzzle.solutionId;
 
-            Debug.Log($"[Explore] 进入 {(level != null ? level.levelId : "（未配关卡）")}，" +
-                      $"解法 = {(string.IsNullOrEmpty(solutionId) ? "（无，单独调试）" : solutionId)}");
+            Debug.Log($"[Explore] 进入 {DescribeLevel()}" +
+                      (standalone ? "　⚠ 单独调试模式（没有从拼图阶段过来的数据，用的是 Inspector 上的 Level）" : "（从拼图阶段过来）") +
+                      $"，解法 = {(string.IsNullOrEmpty(solutionId) ? "（无）" : solutionId)}");
 
             GameEvents.RaiseExplorePhaseEntered(Context);
+        }
+
+        string DescribeLevel()
+        {
+            return level != null ? $"{level.levelId}（{level.name}）" : "（未配关卡）";
         }
 
         /// <summary>门交互时调用：结束本关，加载下一关的拼图场景。</summary>
@@ -46,9 +56,19 @@ namespace Remiehzla.Flow
         {
             GameEvents.RaiseLevelCleared(level);
 
-            if (level == null || level.nextLevel == null)
+            if (level == null)
             {
-                Debug.LogWarning("[Explore] 没有配置下一关（LevelDefinition.nextLevel 为空），流程停在这里");
+                Debug.LogWarning("[Explore] 没有关卡数据，无法判断下一关。" +
+                                 "检查拼图阶段有没有正常传 GameSession.Context，或者在这个场景的 ExploreSceneController 上填 Level", this);
+                return;
+            }
+
+            if (level.nextLevel == null)
+            {
+                Debug.LogWarning($"[Explore] 当前关是 {DescribeLevel()}，它的 Next Level 为空 → 当作「最后一关」处理，流程停在这里。\n" +
+                                 "如果它其实不是最后一关，检查两件事：\n" +
+                                 "  1. 本场景 ExploreSceneController 的 Level 填的是【本关】而不是【下一关】\n" +
+                                 "  2. 这个关卡资产的 Next Level 指向下一关", this);
                 return;
             }
 

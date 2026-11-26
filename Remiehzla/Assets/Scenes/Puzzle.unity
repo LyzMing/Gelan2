@@ -265,7 +265,7 @@ MonoBehaviour:
   shakeDuration: 0.28
   shakeStrength: 16
   shakeFrequency: 26
-  level: {fileID: 11400000, guid: c269591df6a17914297047708c85be67, type: 2}
+  level: {fileID: 11400000, guid: bf46af72f80a8044d8a085e2242f3ed2, type: 2}
 --- !u!4 &1480126359
 Transform:
   m_ObjectHideFlags: 0

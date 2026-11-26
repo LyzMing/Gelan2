@@ -81,5 +81,6 @@ MonoBehaviour:
     countRotateAsStep: 0
     moveLimit: 0
     allowShuffleInGame: 0
-  exploreSceneName: 
+  exploreSceneName: L02_Explore
+  nextLevel: {fileID: 0}
   collectibles: []
