@@ -228,6 +228,60 @@ namespace Remiehzla.EditorTools
                 "但如果美术能裁到内容边界再导出，后面所有环节都更省事。\n\n详见 Console。", "好");
         }
 
+        // ---------------------------------------------------------------- 4. Read/Write
+
+        [MenuItem(MenuRoot + "4. 开启贴图 Read/Write（角色动画图必须）", false, 103)]
+        public static void EnableReadWrite()
+        {
+            List<string> paths = CollectTexturePaths();
+
+            if (paths.Count == 0)
+            {
+                EditorUtility.DisplayDialog("开启 Read/Write",
+                    "先在 Project 窗口里选中贴图（或整个文件夹）。", "好");
+                return;
+            }
+
+            if (!EditorUtility.DisplayDialog("开启 Read/Write",
+                    $"将对 {paths.Count} 张贴图勾上 Read/Write Enabled。\n\n" +
+                    "PlayerAnimator 是在运行时用 Sprite.Create 切帧的，\n" +
+                    "贴图不勾这个就读不到像素，角色会一直不显示。\n\n" +
+                    "代价：这些贴图会多占一份内存（角色图很小，可以忽略）。",
+                    "开启", "取消"))
+                return;
+
+            int changed = 0;
+            int failed = 0;
+
+            try
+            {
+                for (int i = 0; i < paths.Count; i++)
+                {
+                    EditorUtility.DisplayProgressBar("开启 Read/Write", paths[i], i / (float)paths.Count);
+
+                    var importer = AssetImporter.GetAtPath(paths[i]) as TextureImporter;
+
+                    if (importer == null)
+                    {
+                        failed++;
+                        continue;
+                    }
+
+                    importer.isReadable = true;
+                    importer.SaveAndReimport();
+                    changed++;
+                }
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+
+            Debug.Log($"[美术工具] Read/Write：开启 {changed} 张，失败 {failed} 张");
+
+            EditorUtility.DisplayDialog("开启 Read/Write", $"完成：{changed} 张\n失败：{failed} 张", "好");
+        }
+
         // ---------------------------------------------------------------- 内部
 
         /// <summary>把当前选择展开成贴图路径列表（支持选中文件夹）。</summary>
