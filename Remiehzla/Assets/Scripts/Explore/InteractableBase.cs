@@ -1,5 +1,6 @@
 using UnityEngine;
 using Remiehzla.Flow;
+using Remiehzla.Dialogue;
 
 namespace Remiehzla.Explore
 {
@@ -28,7 +29,8 @@ namespace Remiehzla.Explore
         public virtual string Prompt => string.IsNullOrEmpty(promptOverride) ? "交互" : promptOverride;
 
         public virtual bool CanInteract =>
-            isActiveAndEnabled && !Disabled && !startDisabled;
+            isActiveAndEnabled && !Disabled && !startDisabled &&
+            !SubtitlePlayer.IsAnyPlaying;      // 字幕播放期间锁住所有交互（移动不受影响）
 
         public virtual Transform HighlightTarget => highlightTarget != null ? highlightTarget : transform;
 
