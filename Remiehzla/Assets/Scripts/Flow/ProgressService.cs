@@ -83,6 +83,40 @@ namespace Remiehzla.Flow
             return !string.IsNullOrEmpty(itemId) && Data.collected.Contains(itemId);
         }
 
+        /// <summary>这些物品是否都已经拿到。null / 空列表 = 无条件，返回 true。</summary>
+        public static bool HasCollectedAll(string[] itemIds)
+        {
+            if (itemIds == null) return true;
+
+            for (int i = 0; i < itemIds.Length; i++)
+            {
+                string id = itemIds[i];
+
+                if (string.IsNullOrEmpty(id)) continue;
+                if (!HasCollected(id)) return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>列出还缺哪些物品（给调试日志用）。</summary>
+        public static string DescribeMissing(string[] itemIds)
+        {
+            if (itemIds == null || itemIds.Length == 0) return "（无）";
+
+            var missing = new System.Collections.Generic.List<string>();
+
+            for (int i = 0; i < itemIds.Length; i++)
+            {
+                string id = itemIds[i];
+
+                if (string.IsNullOrEmpty(id)) continue;
+                if (!HasCollected(id)) missing.Add(id);
+            }
+
+            return missing.Count == 0 ? "（无）" : string.Join("、", missing);
+        }
+
         public static bool HasCleared(string levelId)
         {
             return !string.IsNullOrEmpty(levelId) && Data.clearedLevels.Contains(levelId);

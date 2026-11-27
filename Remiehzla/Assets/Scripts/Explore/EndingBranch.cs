@@ -73,7 +73,7 @@ namespace Remiehzla.Explore
 
                 if (!ProgressService.HasCollected(id))
                 {
-                    Debug.Log($"[EndingBranch] 缺少物品 {id} → 走缺失结局");
+                    Debug.Log($"[EndingBranch] 还缺：{ProgressService.DescribeMissing(requiredItems)} → 走缺失结局");
 
                     return false;
                 }

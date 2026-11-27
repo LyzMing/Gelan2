@@ -1,5 +1,6 @@
 using UnityEngine;
 using Remiehzla.Flow;
+using Remiehzla.Dialogue;
 
 namespace Remiehzla.Explore
 {
@@ -21,6 +22,13 @@ namespace Remiehzla.Explore
 
         [Tooltip("要求拼图阶段已经通过才能进")]
         public bool requirePuzzleSolved = true;
+
+        [Header("开门前")]
+        [Tooltip("开门前先播这段字幕，播完才换场景。留空 = 直接开门")]
+        public DialogueAsset openDialogue;
+
+        [Tooltip("播字幕期间禁用玩家移动")]
+        public bool lockMovementWhileTalking = true;
 
         ExploreSceneController exploreController;
         bool searchedExploreController;
@@ -63,6 +71,33 @@ namespace Remiehzla.Explore
         }
 
         protected override void OnInteract(GameObject interactor)
+        {
+            // 没配开门前的对话 → 直接过关
+            if (openDialogue == null)
+            {
+                LeaveLevel();
+                return;
+            }
+
+            // 保险：正在播别的对话就先别动
+            if (SubtitlePlayer.IsAnyPlaying) return;
+
+            bool started = SubtitlePlayer.Instance.Play(
+                openDialogue,
+                LeaveLevel,
+                lockMovementWhileTalking);
+
+            if (started)
+            {
+                Debug.Log($"[Door] {name} 播放开门前的对话，播完再过关");
+                return;
+            }
+
+            // 播不起来（数据为空之类）→ 别把玩家卡在门口
+            LeaveLevel();
+        }
+
+        void LeaveLevel()
         {
             ExploreSceneController controller = ResolveExploreController();
 

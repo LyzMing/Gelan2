@@ -24,8 +24,8 @@ namespace Remiehzla.Explore
         public bool startDisabled;
 
         [Header("条件")]
-        [Tooltip("需要先拿到这个物品 id 才能交互（ProgressService 里的收集 id）。留空 = 无条件")]
-        public string requiredItemId;
+        [Tooltip("需要先拿到这些物品（全部拿到才满足）。留空 = 无条件")]
+        public string[] requiredItems = new string[0];
 
         [Tooltip("条件不满足时按 E 弹出的提示")]
         public string conditionLockedHint = "暂未满足条件";
@@ -33,9 +33,8 @@ namespace Remiehzla.Explore
         /// <summary>运行时开关，给机关/条件用。</summary>
         public bool Disabled { get; set; }
 
-        /// <summary>条件是否满足。提示照常显示，只有真正交互时才拦。</summary>
-        public virtual bool ConditionMet =>
-            string.IsNullOrEmpty(requiredItemId) || ProgressService.HasCollected(requiredItemId);
+        /// <summary>条件是否满足（列表里的物品全部拿到）。提示照常显示，只有真正交互时才拦。</summary>
+        public virtual bool ConditionMet => ProgressService.HasCollectedAll(requiredItems);
 
         public virtual string Prompt => string.IsNullOrEmpty(promptOverride) ? "交互" : promptOverride;
 
@@ -54,7 +53,7 @@ namespace Remiehzla.Explore
             {
                 SubtitlePlayer.ShowHint(string.IsNullOrEmpty(conditionLockedHint) ? "暂未满足条件" : conditionLockedHint);
 
-                Debug.Log($"[Interactable] {name} 条件未满足，需要物品：{requiredItemId}");
+                Debug.Log($"[Interactable] {name} 条件未满足，还缺：{ProgressService.DescribeMissing(requiredItems)}");
 
                 return;
             }

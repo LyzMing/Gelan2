@@ -25,8 +25,8 @@ namespace Remiehzla.Dialogue
         public bool lockMovement;
 
         [Header("条件")]
-        [Tooltip("需要先拿到这个物品 id 才能触发。留空 = 无条件")]
-        public string requiredItemId;
+        [Tooltip("需要先拿到这些物品（全部拿到才触发）。留空 = 无条件")]
+        public string[] requiredItems = new string[0];
 
         [Header("触发范围")]
         [Tooltip("没有 BoxCollider2D 时用这个尺寸（世界单位，以本物体为中心）")]
@@ -38,9 +38,8 @@ namespace Remiehzla.Dialogue
         bool inside;
         bool played;
 
-        /// <summary>条件是否满足。</summary>
-        bool ConditionMet =>
-            string.IsNullOrEmpty(requiredItemId) || ProgressService.HasCollected(requiredItemId);
+        /// <summary>条件是否满足（列表里的物品全部拿到）。</summary>
+        bool ConditionMet => ProgressService.HasCollectedAll(requiredItems);
 
         void Awake()
         {
