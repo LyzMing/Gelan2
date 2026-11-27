@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cbdfd0bea5b0cc4cb745fa9423b1179, type: 3}
+  m_Name: L04_Twins
+  m_EditorClassIdentifier: 
+  memo: "\u8941\u8913\u4E2D\u7684\u5A74\u513F"
+  lines:
+  - text: "\u4EA7\u5E8A\u4E0A\uFF0C\u7B2C\u4E8C\u4E2A\u5B69\u5B50\u4E5F\u7741\u5F00\u4E86\u773C\u775B\u3002"
+    charsPerSecond: 0
+    holdAfter: 0
+  - text: "Hzla\uFF0C\u522B\u6015\u2026\u2026\u5C31\u7B97\u4E16\u754C\u788E\u6210\u5343\u4E07\u7247\uFF0C\u6211\u4E5F\u4E0D\u4F1A\u5FD8\u8BB0\u90A3\u5929\u7684\u8A93\u8A00\u3002"
+    charsPerSecond: 0
+    holdAfter: 0
+  rewardItemId: L04_TWINS
+  rewardLabel: "\u8941\u8913\u4E2D\u7684\u5A74\u513F"
+  goToNextLevelWhenFinished: 0

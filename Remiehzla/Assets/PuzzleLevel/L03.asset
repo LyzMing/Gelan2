@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: L03
   m_EditorClassIdentifier: 
   levelId: L03_PARK
-  displayName: "\u516C\u56ED"
+  displayName: "\u5A5A\u793C"
   puzzle:
     image: {fileID: 2800000, guid: 3c2cf1cc3a6011646abde0517ccea5aa, type: 3}
     gridSize: 3
@@ -84,5 +84,6 @@ MonoBehaviour:
     allowShuffleInGame: 0
   puzzleDialogue: {fileID: 11400000, guid: 19566e97dc74af542ac70c798ad1d7ef, type: 2}
   exploreSceneName: L03_Explore
-  nextLevel: {fileID: 0}
-  collectibles: []
+  nextLevel: {fileID: 11400000, guid: a681bfc1d6de59e45824be7a754539d4, type: 2}
+  collectibles:
+  - L03_FLOWER

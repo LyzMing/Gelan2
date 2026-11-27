@@ -437,6 +437,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   level: {fileID: 11400000, guid: aee4e9c93d5c1284bb727d9e02fd0707, type: 2}
   puzzleSceneName: 
+  completionGroup: {fileID: 0}
 --- !u!1 &718739781
 GameObject:
   m_ObjectHideFlags: 0
@@ -448,7 +449,7 @@ GameObject:
   - component: {fileID: 718739782}
   - component: {fileID: 718739783}
   m_Layer: 0
-  m_Name: DialogueZone1
+  m_Name: "\u65B0\u5A18\u7684\u6367\u82B1"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -478,13 +479,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 718739781}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 556a1ba0e6cbe7d4b823e5186314759d, type: 3}
+  m_Script: {fileID: 11500000, guid: 788a4c5f80a730e49a960995abd1e5e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  interactableId: 
+  promptOverride: "\u62FE\u8D77\u65B0\u5A18\u7684\u6367\u82B1"
+  highlightTarget: {fileID: 0}
+  startDisabled: 0
+  requiredItems: []
+  conditionLockedHint: "\u6682\u672A\u6EE1\u8DB3\u6761\u4EF6"
   dialogue: {fileID: 11400000, guid: b6b02663646fad842bb75a4c106dbb8e, type: 2}
   oneShot: 1
-  lockMovement: 0
-  size: {x: 3, y: 4}
+  lockMovement: 1
 --- !u!1 &1085553957
 GameObject:
   m_ObjectHideFlags: 0
@@ -853,9 +859,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1500480063}
   - component: {fileID: 1500480065}
-  - component: {fileID: 1500480064}
+  - component: {fileID: 1500480066}
   m_Layer: 0
-  m_Name: Square
+  m_Name: "\u5A5A\u793C\u51FA\u53E3"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -870,31 +876,12 @@ Transform:
   m_GameObject: {fileID: 1500480062}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.01, y: 3.22, z: 0.05567956}
+  m_LocalPosition: {x: 0, y: -4.15, z: 0.05567956}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 583462378}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1500480064
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1500480062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 788a4c5f80a730e49a960995abd1e5e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  interactableId: 
-  promptOverride: "\u67E5\u770B"
-  highlightTarget: {fileID: 0}
-  startDisabled: 0
-  dialogue: {fileID: 11400000, guid: 73687f14275a4c34f9bc994f7b015669, type: 2}
-  oneShot: 1
-  lockMovement: 1
 --- !u!212 &1500480065
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -947,6 +934,30 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &1500480066
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1500480062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31d8f4f4cc311c64cbae2f179152388a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  interactableId: 
+  promptOverride: "\u79BB\u5F00\u5A5A\u793C\u8349\u576A"
+  highlightTarget: {fileID: 0}
+  startDisabled: 0
+  requiredItems: []
+  conditionLockedHint: "\u6682\u672A\u6EE1\u8DB3\u6761\u4EF6"
+  director: {fileID: 0}
+  targetSceneName: 
+  requirePuzzleSolved: 1
+  openDialogue: {fileID: 11400000, guid: 427b1ebf33c99ef40bec0f5138dabee2, type: 2}
+  skipDialogueWithItem: L03_FLOWER
+  lockMovementWhileTalking: 1
 --- !u!1 &1709778200
 GameObject:
   m_ObjectHideFlags: 0

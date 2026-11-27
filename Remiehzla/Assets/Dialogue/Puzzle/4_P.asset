@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cbdfd0bea5b0cc4cb745fa9423b1179, type: 3}
+  m_Name: 4_P
+  m_EditorClassIdentifier: 
+  memo: "\u4EA7\u623F"
+  lines:
+  - text: "Hzla\uFF01\u4F60\u600E\u4E48\u4E86\uFF1F\uFF01"
+    charsPerSecond: 0
+    holdAfter: 0
+  - text: "\u6709\u4E9B\u7EDD\u5883\u6CA1\u6709\u73B0\u6210\u7684\u51FA\u53E3\uFF0C\u751F\u8DEF\u53EA\u80FD\u7531\u4F60\u81EA\u5DF1\u4E34\u6479\u51FA\u6765\u3002"
+    charsPerSecond: 0
+    holdAfter: 0
+  - text: "\u9009\u4E2D\u95E8\u6216\u59BB\u5B50\u7684\u788E\u7247\uFF0C\u6309 N \u590D\u5236\u3002\u9009\u4E2D\u9519\u4E71\u683C\u6309
+      M \u7C98\u8D34\uFF0C\u518D\u6309 J \u955C\u50CF\u3002"
+    charsPerSecond: 0
+    holdAfter: 0
+  rewardItemId: 
+  rewardLabel: 
+  goToNextLevelWhenFinished: 0

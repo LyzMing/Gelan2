@@ -24,6 +24,9 @@ namespace Remiehzla.Flow
         [Tooltip("进下一关时加载的拼图场景名。留空则用 GameSession 里记的那个")]
         public string puzzleSceneName;
 
+        [Tooltip("最后一关离场时启用的收尾演出，平时保持禁用")]
+        public GameObject completionGroup;
+
         /// <summary>本关上下文（从拼图阶段带过来的）。</summary>
         public LevelContext Context { get; private set; }
 
@@ -82,6 +85,12 @@ namespace Remiehzla.Flow
 
             if (level.nextLevel == null)
             {
+                if (completionGroup != null)
+                {
+                    completionGroup.SetActive(true);
+                    return;
+                }
+
                 Debug.LogWarning($"[Explore] 当前关是 {DescribeLevel()}，它的 Next Level 为空 → 当作「最后一关」处理，流程停在这里。\n" +
                                  "如果它其实不是最后一关，检查两件事：\n" +
                                  "  1. 本场景 ExploreSceneController 的 Level 填的是【本关】而不是【下一关】\n" +

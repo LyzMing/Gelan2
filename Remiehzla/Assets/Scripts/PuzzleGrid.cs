@@ -134,6 +134,8 @@ namespace Remiehzla.Puzzle
         bool shaking;
 
         // ---- 复制 / 粘贴 ----
+        PuzzleTile exchangeAnchor;
+        bool hasKeyboardCopy;
         bool copyMode;              // true = 手上拿着一块"复制体"，等左键放下
         PuzzleTile copySource;      // 复制源
         PuzzleTile ghost;           // 跟着光标的复制体（不在 tiles 里，不参与格子逻辑）
@@ -206,6 +208,8 @@ namespace Remiehzla.Puzzle
             ApplyLayout(layout);
 
             MoveCount = 0;
+            exchangeAnchor = null;
+            hasKeyboardCopy = false;
             Select(null);
             CheckSolved();
 
@@ -354,6 +358,8 @@ namespace Remiehzla.Puzzle
 
             if (copyMode) CancelCopy();
 
+            exchangeAnchor = null;
+            hasKeyboardCopy = false;
             Select(null);
         }
 
@@ -380,12 +386,17 @@ namespace Remiehzla.Puzzle
 
             if (Input.GetKeyDown(KeyCode.Escape))
             {
+                exchangeAnchor = null;
+                hasKeyboardCopy = false;
                 Select(null);
                 return;
             }
 
             // 下面每一项都由关卡的 allowedOps 决定，配了哪些就只响应哪些
             if (Allows(PuzzleOps.Undo) && Input.GetKeyDown(KeyCode.Z)) { Undo(); return; }                  // 撤回
+            if (Allows(PuzzleOps.Drag) && Input.GetKeyDown(KeyCode.B)) { MarkOrExchange(); return; }
+            if (Allows(PuzzleOps.Copy) && Input.GetKeyDown(KeyCode.N)) { RememberForPaste(); return; }
+            if (Allows(PuzzleOps.Copy) && Input.GetKeyDown(KeyCode.M)) { PasteSelected(); return; }
             if (Allows(PuzzleOps.Copy) && Input.GetKeyDown(KeyCode.C)) { BeginCopy(); return; }              // 复制
             if (Allows(PuzzleOps.Rotate) && Input.GetKeyDown(KeyCode.K)) { RotateSelected(true); return; }   // 顺时针
             if (Allows(PuzzleOps.Rotate) && Input.GetKeyDown(KeyCode.H)) { RotateSelected(false); return; }  // 逆时针
@@ -445,6 +456,8 @@ namespace Remiehzla.Puzzle
 
             MoveCount = 0;
             IsSolved = false;
+            exchangeAnchor = null;
+            hasKeyboardCopy = false;
             Select(null);
 
             Debug.Log($"[PuzzleGrid] 已打乱（{gridSize}×{gridSize}）");
@@ -694,11 +707,8 @@ namespace Remiehzla.Puzzle
 
             CancelCopy();       // 清掉可能还在飞的上一块
 
-            copySource = selected;
-            copyPiece = selected.PieceIndex;
-            copyTurns = selected.TurnSteps;
-            copyFlipped = selected.FlippedX;
-            copyAngle = selected.AngleTarget;
+            hasKeyboardCopy = false;
+            CaptureCopy();
 
             // 复用 CreateTile 造一块"幽灵"，它不在 tiles 里，不参与格子逻辑
             ghost = CreateTile(selected.CellIndex);
@@ -714,6 +724,43 @@ namespace Remiehzla.Puzzle
             Debug.Log("[PuzzleGrid] 复制中：左键放下覆盖，Esc 取消");
 
             return true;
+        }
+
+        void MarkOrExchange()
+        {
+            if (selected == null) return;
+            if (exchangeAnchor == null)
+            {
+                exchangeAnchor = selected;
+                Remiehzla.Dialogue.SubtitlePlayer.ShowHint("已锁定碎片，选另一块按 B 互换");
+                return;
+            }
+            if (exchangeAnchor != selected) SwapCells(exchangeAnchor, selected);
+            exchangeAnchor = null;
+        }
+
+        void CaptureCopy()
+        {
+            copySource = selected;
+            copyPiece = selected.PieceIndex;
+            copyTurns = selected.TurnSteps;
+            copyFlipped = selected.FlippedX;
+            copyAngle = selected.AngleTarget;
+        }
+
+        void RememberForPaste()
+        {
+            if (selected == null || selected.PieceIndex < 0) return;
+            CaptureCopy();
+            hasKeyboardCopy = true;
+            Remiehzla.Dialogue.SubtitlePlayer.ShowHint("已复制，选中目标格后按 M");
+        }
+
+        void PasteSelected()
+        {
+            if (!hasKeyboardCopy || selected == null || selected == copySource) return;
+            OverwriteFromCopy(selected);
+            hasKeyboardCopy = false;
         }
 
         /// <summary>取消复制（Esc、点到棋盘外、或重新开始复制）。</summary>
@@ -756,19 +803,24 @@ namespace Remiehzla.Puzzle
                 return;
             }
 
+            OverwriteFromCopy(target);
+
+            copyMode = false;
+            ClearHover();
+
+            // 复制体滑到目标格再消失，视觉上就是"放下去了"
+            if (ghost != null) ghost.SlideTo(CellPosition(cell), moveDuration);
+        }
+
+        void OverwriteFromCopy(PuzzleTile target)
+        {
             // 记下被覆盖前的样子，F/Z 能撤回
             PushUndo(CaptureAction(ActionKind.Overwrite, target));
 
             // 覆盖：目标格变成复制体的图 + 朝向
             DisplayPiece(target, copyPiece);
             target.RestoreOrientation(copyTurns, copyFlipped, copyAngle, rotateDuration);
-
-            copyMode = false;
-            ClearHover();
             CheckSolved();
-
-            // 复制体滑到目标格再消失，视觉上就是"放下去了"
-            if (ghost != null) ghost.SlideTo(CellPosition(cell), moveDuration);
         }
 
         void UpdateGhost(float deltaTime)

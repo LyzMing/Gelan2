@@ -285,8 +285,8 @@ namespace Remiehzla.UI
             if ((ops & PuzzleOps.SwapAdjacent) != 0) builder.Append("↑↓←→ 移动　");
             if ((ops & PuzzleOps.Rotate) != 0) builder.Append("H K 旋转　");
             if ((ops & PuzzleOps.Flip) != 0) builder.Append("J 翻转　");
-            if ((ops & PuzzleOps.Drag) != 0) builder.Append("按住拖动　");
-            if ((ops & PuzzleOps.Copy) != 0) builder.Append("C 复制　");
+            if ((ops & PuzzleOps.Drag) != 0) builder.Append("B 互换 / 拖动　");
+            if ((ops & PuzzleOps.Copy) != 0) builder.Append("N/M 复制粘贴　");
             if ((ops & PuzzleOps.Undo) != 0) builder.Append("Z 撤回　");
 
             builder.Append("滚轮缩放　中键平移");

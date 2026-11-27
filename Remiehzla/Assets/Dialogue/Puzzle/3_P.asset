@@ -23,5 +23,10 @@ MonoBehaviour:
   - text: "\uFF08\u5E78\u798F\u7684\u8BC0\u7A8D\u4E4B\u4E00\u662F\u6362\u4F4D\u601D\u8003\u3002\uFF09"
     charsPerSecond: 0
     holdAfter: 0
+  - text: "\u9009\u4E2D\u4E00\u5757\u6309 B \u9501\u5B9A\uFF0C\u518D\u9009\u53E6\u4E00\u5757\u6309
+      B \u4E92\u6362\u3002"
+    charsPerSecond: 0
+    holdAfter: 0
   rewardItemId: 
   rewardLabel: 
+  goToNextLevelWhenFinished: 0

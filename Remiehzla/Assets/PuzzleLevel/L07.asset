@@ -1,0 +1,131 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c127cac241f635748a961bc1510aaa33, type: 3}
+  m_Name: L07
+  m_EditorClassIdentifier: 
+  levelId: L07_LIBRARY
+  displayName: "\u6DF1\u591C\u56FE\u4E66\u9986"
+  puzzle:
+    image: {fileID: 2800000, guid: be341055a13f4e34d98db99afd76b583, type: 3}
+    gridSize: 4
+    initial:
+      cells:
+      - pieceIndex: 15
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 1
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 2
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 12
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 4
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 10
+        turnSteps: 3
+        flipped: 0
+      - pieceIndex: 9
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 7
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 8
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 6
+        turnSteps: 0
+        flipped: 1
+      - pieceIndex: 5
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 11
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 3
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 13
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 14
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 0
+        turnSteps: 0
+        flipped: 0
+    solutions:
+    - solutionId: normal
+      isHidden: 0
+      exploreSceneName: 
+      cells:
+      - pieceIndex: 0
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 1
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 2
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 3
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 4
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 5
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 6
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 7
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 8
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 9
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 10
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 11
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 12
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 13
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 14
+        turnSteps: 0
+        flipped: 0
+      - pieceIndex: 15
+        turnSteps: 0
+        flipped: 0
+    allowedOps: 95
+    countRotateAsStep: 0
+    moveLimit: 0
+    allowShuffleInGame: 0
+  puzzleDialogue: {fileID: 11400000, guid: d7c17012fdfaa784792e18857ec42487, type: 2}
+  exploreSceneName: L07_Explore
+  nextLevel: {fileID: 0}
+  collectibles:
+  - L07_CALENDAR

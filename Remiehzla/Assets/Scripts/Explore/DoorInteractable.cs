@@ -27,6 +27,9 @@ namespace Remiehzla.Explore
         [Tooltip("开门前先播这段字幕，播完才换场景。留空 = 直接开门")]
         public DialogueAsset openDialogue;
 
+        [Tooltip("拿到此物品时跳过开门对白，留空则照常播放")]
+        public string skipDialogueWithItem;
+
         [Tooltip("播字幕期间禁用玩家移动")]
         public bool lockMovementWhileTalking = true;
 
@@ -73,7 +76,7 @@ namespace Remiehzla.Explore
         protected override void OnInteract(GameObject interactor)
         {
             // 没配开门前的对话 → 直接过关
-            if (openDialogue == null)
+            if (openDialogue == null || (!string.IsNullOrEmpty(skipDialogueWithItem) && ProgressService.HasCollected(skipDialogueWithItem)))
             {
                 LeaveLevel();
                 return;

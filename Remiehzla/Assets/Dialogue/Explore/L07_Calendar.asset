@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cbdfd0bea5b0cc4cb745fa9423b1179, type: 3}
+  m_Name: L07_Calendar
+  m_EditorClassIdentifier: 
+  memo: "\u5212\u6EE1\u7EA2\u53C9\u7684\u53F0\u5386"
+  lines:
+  - text: "\u4E00\u5929\u5212\u6389\u4E00\u683C\uFF0C\u597D\u50CF\u53EA\u8981\u4E00\u76F4\u5212\u4E0B\u53BB\uFF0C\u5C31\u80FD\u8D70\u51FA\u6F2B\u957F\u7684\u9ED1\u591C\u2026\u2026"
+    charsPerSecond: 0
+    holdAfter: 0
+  - text: "\u5947\u602A\u2026\u2026\u6211\u73B0\u5728\u7A76\u7ADF\u662F\u5728\u5F80\u524D\u8D70\uFF0C\u8FD8\u662F\u5728\u539F\u5730\u6253\u8F6C\uFF1F"
+    charsPerSecond: 0
+    holdAfter: 0
+  rewardItemId: L07_CALENDAR
+  rewardLabel: "\u5212\u6EE1\u7EA2\u53C9\u7684\u53F0\u5386"
+  goToNextLevelWhenFinished: 0

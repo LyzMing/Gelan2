@@ -386,13 +386,13 @@ MonoBehaviour:
   highlightTarget: {fileID: 0}
   startDisabled: 0
   requiredItems:
-  - L01_PHOTO
   - L01_KEY
-  conditionLockedHint: "\u6682\u672A\u6EE1\u8DB3\u6761\u4EF6"
+  conditionLockedHint: "\u95E8\u9501\u7740\u3002\u53BB\u697C\u4E0A\u67DC\u5B50\u91CC\u627E\u627E\u94A5\u5319\u3002"
   director: {fileID: 0}
   targetSceneName: 
   requirePuzzleSolved: 1
   openDialogue: {fileID: 11400000, guid: 7bab46510c74a8b419ad8476d59284f6, type: 2}
+  skipDialogueWithItem: 
   lockMovementWhileTalking: 1
 --- !u!212 &875593131
 SpriteRenderer:
@@ -10114,6 +10114,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   level: {fileID: 11400000, guid: bf46af72f80a8044d8a085e2242f3ed2, type: 2}
   puzzleSceneName: 
+  completionGroup: {fileID: 0}
 --- !u!4 &2145956661
 Transform:
   m_ObjectHideFlags: 0

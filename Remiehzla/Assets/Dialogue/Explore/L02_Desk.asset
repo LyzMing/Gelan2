@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cbdfd0bea5b0cc4cb745fa9423b1179, type: 3}
+  m_Name: L02_Desk
+  m_EditorClassIdentifier: 
+  memo: "\u523B\u5B57\u7684\u8BFE\u684C"
+  lines:
+  - text: "\u684C\u89D2\u523B\u7740\u4E00\u4E2A\u6D45\u6D45\u7684\u201C\u65E9\u201D\u5B57\uFF0C\u65C1\u8FB9\u8FD8\u6709\u534A\u4E2A\u88AB\u638C\u5FC3\u78E8\u5E73\u7684\u540D\u5B57\u2026\u2026"
+    charsPerSecond: 0
+    holdAfter: 0
+  - text: "\u5F53\u5E74\u5750\u5728\u8FD9\u91CC\u540C\u6211\u4E00\u8D77\u770B\u7A97\u5916\u7684\u4EBA\u2026\u2026\u7A76\u7ADF\u662F\u8C01\u5462\uFF1F"
+    charsPerSecond: 0
+    holdAfter: 0
+  rewardItemId: L02_DESK
+  rewardLabel: "\u523B\u5B57\u7684\u8BFE\u684C"
+  goToNextLevelWhenFinished: 0
