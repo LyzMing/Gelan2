@@ -122,6 +122,9 @@ namespace Remiehzla.Puzzle
 
         public CellState[] cells = new CellState[0];
 
+        [Tooltip("只判定这些格子（从左上角 0 开始）。留空时判定全盘。")]
+        public int[] requiredCells;
+
         public PuzzleSolution() { }
 
         public PuzzleSolution(int count)

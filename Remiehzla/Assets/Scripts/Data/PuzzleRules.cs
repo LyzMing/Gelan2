@@ -31,6 +31,19 @@ namespace Remiehzla.Puzzle
             return true;
         }
 
+        static bool MatchesSolution(CellState[] cells, PuzzleSolution solution)
+        {
+            var required = solution.requiredCells;
+            if (required == null || required.Length == 0) return LayoutMatches(cells, solution.cells);
+            if (solution.cells == null || cells.Length != solution.cells.Length) return false;
+
+            foreach (int index in required)
+            {
+                if (index < 0 || index >= cells.Length || !cells[index].SameAs(solution.cells[index])) return false;
+            }
+            return true;
+        }
+
         /// <summary>
         /// 找出匹配的正解，返回 solutionId；没有匹配返回 null。
         /// 先比普通解、再比隐藏解 —— 隐藏解不应该抢掉常规通关。
@@ -50,7 +63,7 @@ namespace Remiehzla.Puzzle
                     PuzzleSolution solution = solutions[i];
                     if (solution == null) continue;
                     if (solution.isHidden != wantHidden) continue;
-                    if (!LayoutMatches(cells, solution.cells)) continue;
+                    if (!MatchesSolution(cells, solution)) continue;
 
                     isHidden = solution.isHidden;
 

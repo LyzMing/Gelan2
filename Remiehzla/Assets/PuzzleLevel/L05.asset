@@ -69,6 +69,7 @@ MonoBehaviour:
         flipped: 0
     solutions:
     - solutionId: normal
+      requiredCells: 050000000600000007000000
       isHidden: 0
       exploreSceneName: 
       cells:
@@ -121,6 +122,7 @@ MonoBehaviour:
         turnSteps: 0
         flipped: 0
     - solutionId: father
+      requiredCells: 040000000500000006000000
       isHidden: 1
       exploreSceneName: 
       cells:
