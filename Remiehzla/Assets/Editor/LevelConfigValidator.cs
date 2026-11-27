@@ -89,7 +89,12 @@ namespace Remiehzla.EditorTools
 
             if (level.puzzle == null)
             {
-                warnings.Add("没有拼图配置（如果是纯剧情关可以忽略）");
+                // 纯演出关（最终演出关）：上一关会直接加载它的 exploreSceneName，所以这个必须有
+                if (string.IsNullOrWhiteSpace(level.exploreSceneName))
+                    errors.Add("没有拼图配置 = 纯演出关，必须填 exploreSceneName（上一关会直接加载这个场景）");
+                else
+                    warnings.Add($"没有拼图配置 → 当作纯演出关，进入时直接加载 {level.exploreSceneName}");
+
                 return;
             }
 

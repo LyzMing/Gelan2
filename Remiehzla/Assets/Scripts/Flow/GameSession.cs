@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Remiehzla.Puzzle;
 
@@ -23,11 +24,37 @@ namespace Remiehzla.Flow
         /// <summary>拼图场景名（一个拼图场景复用于所有关卡）。</summary>
         public static string PuzzleSceneName = "Puzzle";
 
+        /// <summary>本次运行是否已经点过「开始游戏」。</summary>
+        public static bool HasStarted { get; private set; }
+
+        /// <summary>点了开始游戏时触发。LevelDirector 靠它决定什么时候真正开始拼图。</summary>
+        public static event Action Started;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
             Context = null;
             PendingLevel = null;
+            HasStarted = false;
+            Started = null;
+        }
+
+        /// <summary>标记"已经开始了"，并广播一次（重复调用不会重复广播）。</summary>
+        public static void MarkStarted()
+        {
+            if (HasStarted) return;
+
+            HasStarted = true;
+            Started?.Invoke();
+        }
+
+        /// <summary>重置本次运行的状态（结束界面"回到开始"用）。保留拼图场景名。</summary>
+        public static void Reset()
+        {
+            Context = null;
+            PendingLevel = null;
+            HasStarted = false;
+            Started = null;
         }
 
         /// <summary>确保有一个可用的上下文（探索场景单独打开调试时用）。</summary>
@@ -38,6 +65,12 @@ namespace Remiehzla.Flow
             if (Context.level == null) Context.level = fallbackLevel;
 
             return Context;
+        }
+
+        /// <summary>把上下文切成新的一关（纯演出关直接进场景时用）。</summary>
+        public static void StartNewContext(LevelDefinition level)
+        {
+            Context = new LevelContext { level = level };
         }
     }
 }

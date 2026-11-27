@@ -66,12 +66,32 @@ namespace Remiehzla.Flow
 
         void Start()
         {
+            // 场景里有开始界面、而且本次运行还没开始过 → 等玩家点「开始游戏」再进拼图
+            bool waitForStartMenu = !GameSession.HasStarted && FindObjectOfType<UI.StartMenu>() != null;
+
+            if (waitForStartMenu)
+            {
+                GameSession.Started += OnGameStarted;
+
+                Debug.Log("[LevelDirector] 等待开始界面");
+
+                return;
+            }
+
+            EnterPuzzle();
+        }
+
+        void OnGameStarted()
+        {
+            GameSession.Started -= OnGameStarted;
+
             EnterPuzzle();
         }
 
         void OnDestroy()
         {
             GameEvents.ItemCollected -= OnItemCollected;
+            GameSession.Started -= OnGameStarted;
 
             if (puzzleUI == null) return;
 
@@ -92,6 +112,17 @@ namespace Remiehzla.Flow
 
         void EnterPuzzle()
         {
+            // 纯演出关（没有拼图配置）：跳过拼图阶段，直接进它的场景
+            if (level != null && level.puzzle == null)
+            {
+                Context = new LevelContext { level = level };
+
+                Debug.Log($"[LevelDirector] {level.levelId} 没有拼图配置（演出关），跳过拼图");
+
+                EnterExplore();
+                return;
+            }
+
             Current = Phase.Puzzle;
 
             Context = new LevelContext { level = level };

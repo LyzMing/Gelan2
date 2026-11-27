@@ -89,7 +89,29 @@ namespace Remiehzla.Flow
                 return;
             }
 
-            GameSession.PendingLevel = level.nextLevel;
+            LevelDefinition next = level.nextLevel;
+
+            // 下一关是纯演出关（没有拼图配置）：不经过拼图场景，直接进它的场景
+            if (next.puzzle == null)
+            {
+                string cutsceneScene = next.exploreSceneName;
+
+                if (string.IsNullOrEmpty(cutsceneScene))
+                {
+                    Debug.LogError($"[Explore] 下一关 {next.levelId} 没有拼图配置，但也没填 Explore Scene Name，" +
+                                   "不知道该加载哪个场景", this);
+                    return;
+                }
+
+                Debug.Log($"[Explore] 本关结束 → 下一关 {next.levelId} 是演出关，直接加载 {cutsceneScene}");
+
+                GameSession.StartNewContext(next);
+
+                SceneFlow.Load(cutsceneScene);
+                return;
+            }
+
+            GameSession.PendingLevel = next;
 
             string target = string.IsNullOrEmpty(puzzleSceneName)
                 ? GameSession.PuzzleSceneName
@@ -97,7 +119,7 @@ namespace Remiehzla.Flow
 
             GameSession.PuzzleSceneName = target;
 
-            Debug.Log($"[Explore] 本关结束 → 下一关 {level.nextLevel.levelId}，加载拼图场景 {target}");
+            Debug.Log($"[Explore] 本关结束 → 下一关 {next.levelId}，加载拼图场景 {target}");
 
             SceneFlow.Load(target);
         }
