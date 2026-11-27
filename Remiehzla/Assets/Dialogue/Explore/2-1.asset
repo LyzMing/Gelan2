@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cbdfd0bea5b0cc4cb745fa9423b1179, type: 3}
+  m_Name: 2-1
+  m_EditorClassIdentifier: 
+  memo: 
+  lines:
+  - text: "\u9633\u5149\u6D12\u8FDB\u5BA4\u5185\uFF0C\u7A97\u5916\u6709\u4EBA\u5F71\u95EA\u8FC7\uFF0C\u4F20\u6765\u513F\u7AE5\u7684\u73A9\u95F9\u58F0"
+    charsPerSecond: 0
+    holdAfter: 0
+  - text: "\u53EF\u662F\uFF0C\u4F60\u662F\u8C01\u5462\uFF1F"
+    charsPerSecond: 0
+    holdAfter: 0
+  rewardItemId: 
+  rewardLabel: 
+  goToNextLevelWhenFinished: 0

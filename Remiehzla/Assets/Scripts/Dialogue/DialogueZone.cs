@@ -32,9 +32,14 @@ namespace Remiehzla.Dialogue
         [Tooltip("没有 BoxCollider2D 时用这个尺寸（世界单位，以本物体为中心）")]
         public Vector2 size = new Vector2(2f, 2f);
 
+        [Header("时机")]
+        [Tooltip("进入场景后等多少秒才开始判定。转场还没结束时一律不触发，这个是在转场结束之后再等的时间")]
+        public float startDelay = 0.35f;
+
         Collider2D areaCollider;
         Transform player;
         float nextPlayerSearch;
+        float readyTime;
         bool inside;
         bool played;
 
@@ -46,9 +51,21 @@ namespace Remiehzla.Dialogue
             areaCollider = GetComponent<Collider2D>();
         }
 
+        void Start()
+        {
+            readyTime = Time.unscaledTime + startDelay;
+        }
+
         void Update()
         {
             if (oneShot && played) return;
+
+            // 还在转场（淡出/加载/淡入）→ 完全不判定。
+            // 注意不要更新 inside：保持 false，等真正进场后那一帧才算"刚走进来"，
+            // 这样出生点正好在区域里也能正确触发一次。
+            if (SceneFlow.IsTransitioning) return;
+
+            if (Time.unscaledTime < readyTime) return;
 
             Transform target = ResolvePlayer();
 

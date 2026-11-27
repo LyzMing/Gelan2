@@ -46,6 +46,10 @@ namespace Remiehzla.Explore
         [TextArea(2, 4)]
         public string missingEndMessage = "";
 
+        [Header("时机")]
+        [Tooltip("转场结束之后等多少秒再开始播演出（两套场景内容会立刻切换）")]
+        public float startDelay = 0.5f;
+
         /// <summary>本次判定结果：true = 物品齐了。</summary>
         public bool IsComplete { get; private set; }
 
@@ -53,7 +57,25 @@ namespace Remiehzla.Explore
         {
             IsComplete = CheckComplete();
 
+            // 内容立刻切好，让淡入的时候看到的就是对应那套演出
             ApplyGroups();
+
+            StartCoroutine(PlayAfterLoad());
+        }
+
+        System.Collections.IEnumerator PlayAfterLoad()
+        {
+            // 等转场（淡出/加载/淡入）走完，别把演出播在遮罩后面
+            while (SceneFlow.IsTransitioning) yield return null;
+
+            float waited = 0f;
+
+            while (waited < startDelay)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
             PlayDialogue();
         }
 

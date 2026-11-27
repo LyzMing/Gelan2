@@ -15,6 +15,21 @@ namespace Remiehzla.Flow
     /// </summary>
     public static class SceneFlow
     {
+        /// <summary>
+        /// 是否正在转场（淡出 / 加载 / 淡入 都算）。
+        /// 自动触发的东西（区域对话、结局演出、交互提示）要等它变 false 才该生效，
+        /// 否则会播在遮罩后面。
+        /// </summary>
+        public static bool IsTransitioning
+        {
+            get
+            {
+                SceneTransitionManager transition = SceneTransitionManager.Instance;
+
+                return transition != null && transition.IsTransitioning;
+            }
+        }
+
         /// <summary>带淡入淡出地加载场景。</summary>
         public static void Load(string sceneName)
         {

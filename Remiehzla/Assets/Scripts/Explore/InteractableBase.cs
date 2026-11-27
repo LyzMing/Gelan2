@@ -40,7 +40,8 @@ namespace Remiehzla.Explore
 
         public virtual bool CanInteract =>
             isActiveAndEnabled && !Disabled && !startDisabled &&
-            !SubtitlePlayer.IsAnyPlaying;      // 字幕播放期间锁住所有交互（移动不受影响）
+            !SubtitlePlayer.IsAnyPlaying &&    // 字幕播放期间锁住所有交互（移动不受影响）
+            !SceneFlow.IsTransitioning;        // 转场期间不响应（提示也不会冒出来）
 
         public virtual Transform HighlightTarget => highlightTarget != null ? highlightTarget : transform;
 
